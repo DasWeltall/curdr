@@ -10,4 +10,4 @@ First-install bootstrap can install official Hermes, invoke provider setup and p
 
 Opt-in Android notification code registers devices, persists tickets/retries, suppresses foreground duplicates, respects sleep/quiet hours and removes dead/revoked tokens. FCM/Expo owner credentials and a custom configured Android build are required. No configured-device delivery was tested or claimed. Web push is not implemented.
 
-83 backend tests, 20 Node tests, strict TypeScript and Expo web build passed. No paid model test or private-network Hermes access was made. Fresh live provider installation remains an owner-host acceptance test.
+84 backend tests, 20 Node tests, strict TypeScript and Expo web build passed. No paid model test or private-network Hermes access was made. Fresh live provider installation remains an owner-host acceptance test.

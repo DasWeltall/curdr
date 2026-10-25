@@ -1,40 +1,44 @@
-# Install curdr · agent instructions · 0.9.1
+# Install curdr · agent guide · 0.10.0
 
-Use only when the owner asks you to install or update curdr on their existing Hermes host. This adds the curdr UI and gateway; it does not replace Hermes. Work quietly and report only the result. Do not read the full repository, run paid model tests, enable routines, install TencentDB, build Android, publish to GitHub or change the owner's agent personality globally.
+Use only when the owner asks to install/update curdr. Work quietly, use minimal tokens, and report the result. No paid model tests, full-repository reading, Android builds, public-port changes or global personality edits. Keep existing routines disabled/enabled as they are.
 
-## 1. Locate and preserve
+## 1. Preserve
 
-Find the active curdr service, installation, Python environment, `--data` path and Hermes profile. Do not assume the default profile if another is active. For updates, take a consistent backup of the existing curdr data/configuration and retain the previous source/environment for rollback. Stop only the curdr service for the final switch, not Hermes. Keep its database, API keys, gateway token, profile, sessions, workspace, binding, origins and routines.
+Find the active Hermes profile and any curdr service, release, Python environment and `--data` path. Back up existing curdr configuration/database consistently and retain the previous release for rollback. Preserve profile, avatar, sessions, workspace, keys, gateway token, origins and network binding. Stop only curdr for the final switch. Never replace another Hermes profile or silently install a second agent.
 
-## 2. Obtain the pinned release
+## 2. Verify the release
 
-Requirements also include Git. Use the public GitHub repository, not the product website CDN. Clone into a new versioned local release directory, leaving the current installation intact:
-
-```bash
-git clone --depth 1 --branch v0.9.1 https://github.com/DasWeltall/curdr.git /ABSOLUTE/NEW/RELEASE/DIRECTORY
-git -C /ABSOLUTE/NEW/RELEASE/DIRECTORY rev-parse HEAD
-```
-
-Substitute a real unused path. Require the exact commit `d3123228ccdb09b75f402200039a0d3db9eec8fd`; stop on any mismatch. Never install unpinned main or pipe a remote script into a shell. Continue from this verified checkout. The product website is only a presentation surface; installation must not depend on its automated-client access.
-
-## 3. Prepare
-
-Requirements: Python 3.11+ with venv, Node 24+, npm, and an existing authenticated Hermes API. Add ffmpeg and `--voice` only when preserving existing voice support or the owner requests it. Do not silently install a second Hermes or reset its API key.
-
-From the pinned checkout, run:
+Clone into a real, unused absolute release directory:
 
 ```bash
-bash scripts/install-local.sh --data /ABSOLUTE/EXISTING/CURDR/DATA
+git clone --depth 1 --branch v0.10.0 https://github.com/DasWeltall/curdr.git /ABSOLUTE/NEW/RELEASE
+git -C /ABSOLUTE/NEW/RELEASE rev-parse HEAD
 ```
 
-Substitute the actual data path (new default: `$HOME/.local/share/curdr`). Existing connection settings and key are reused. First install: add `--hermes-env /ABSOLUTE/ACTIVE/HERMES/.env` and, if needed, its `--hermes-url`. This reads `API_SERVER_KEY` locally without printing it. Never paste keys into chat. Set `--hermes-home` or `--workspace` only to actual directories authorized by the owner. Binding defaults to loopback on new installs. The script builds the PWA, configures `web_dir` and performs read-only health checks without an LLM call.
+Require commit `ecb3fc1d743818a35f7e0f30fcf9f7ea70c20dca`. Stop on mismatch. Continue only from this verified checkout. Use GitHub for installation; the marketing CDN can block automated clients.
 
-## 4. Serve and pair
+## 3. Prepare Hermes
 
-Restart the existing curdr service with this release's `.venv-curdr/bin/curdr-gateway serve --data ACTUAL_PATH`, preserving its service manager and network settings. For a new install, use that command in a managed persistent process (one worker). Do not overwrite an unrelated service or run two curdr services against one database.
+An existing authenticated Hermes API needs no second installation. Requirements: Git, Python 3.11+ with venv, Node 24+ and npm. The active Hermes PM activation script may provide these tools.
 
-Use the existing HTTPS reverse proxy/VPN, preserving streaming (disable response buffering; allow long SSE connections). If none exists, report that HTTPS setup is still required for iPhone/browser microphone and camera; do not open public ports on your own. If a new browser origin is authorized, add that exact origin while preserving the existing allowlist.
+If Hermes is absent and the owner requested a first installation too, use `scripts/bootstrap.sh` from the verified checkout. It downloads the official Hermes installer, invokes provider/model setup, enables a private loopback API on a fresh profile, verifies the curdr release and starts it. Provider authentication requires the owner on their host; do not invent credentials or request secrets in chat. Report a blocked interactive step clearly. Do not run bootstrap over an existing curdr install.
 
-Generate a fresh code with `curdr-gateway pair --data ACTUAL_PATH` from the release environment. The user opens their curdr URL, selects Connect Hermes, enters that same gateway URL and code, and loads their saved server profile. iPhone: Safari → Share → Add to Home Screen → Open as Web App.
+For an existing Hermes, verify its API configuration locally (`API_SERVER_ENABLED=true`, a private `API_SERVER_KEY`, default loopback port 8642). Reuse its key. A disabled API needs the owner's requested connection setup and a drain-aware Hermes service restart; never interrupt active work silently. No paid chat call is required: `/v1/models` verifies readiness.
 
-Return: version, service result, usable URL, short-lived pairing code privately, and remaining blockers. No secrets, model calls or fabricated device-test claims. On failure, restore the previous service target and configuration; never delete the persistent data.
+## 4. Install curdr
+
+From the verified checkout:
+
+```bash
+bash scripts/install-local.sh --data /ABSOLUTE/ACTUAL/CURDR/DATA
+```
+
+First install: add `--hermes-env /ABSOLUTE/ACTIVE/HERMES/.env` and the actual `--hermes-url` if nondefault. This reads the key locally without printing it. Existing configuration is reused. Add `--hermes-home` and `--workspace` only for actual authorized directories. Add `--voice` plus FFmpeg when voice transcription is requested/already used. The installer creates an isolated environment, builds the PWA and checks readiness without a model call.
+
+## 5. Serve, pair, report
+
+Start/restart the existing curdr service with this release's `.venv-curdr/bin/curdr-gateway serve --data ACTUAL_PATH` (one worker). Keep the same persistent data path. First installs need a persistent process/service and the owner's HTTPS reverse proxy/VPN; preserve SSE streaming without response buffering. Loopback alone is not a phone URL. Do not open public ports yourself.
+
+Run `curdr-gateway pair --data ACTUAL_PATH` from that environment. Return the usable URL, short-lived pairing code privately, version and unresolved setup. The user opens the URL → Connect Hermes → same URL/code → saved server profile. iPhone: Safari → Share → Add to Home Screen → Open as Web App.
+
+Android remote notifications additionally need owner FCM/Expo credentials and a configured custom build: `docs/NOTIFICATIONS.md`. Do not claim them working from an unconfigured APK or Expo Go. On failed update, restore the prior service/configuration; never delete data.
