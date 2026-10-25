@@ -4,12 +4,12 @@ This is a source/gateway release. The previously supplied Android preview is 0.9
 
 ## Install or update through an agent
 
-Give Hermes https://curdr-founders.codingpenguin.chatgpt.site/install.md and explicitly ask it to follow that document on your existing Hermes host. The small versioned descriptor provides the source URL and SHA-256. The local installer uses a separate Python environment, builds the PWA and performs read-only health checks without a model request. It does not install Hermes, open public ports or change routines.
+Give Hermes https://raw.githubusercontent.com/DasWeltall/curdr/main/install.md and explicitly ask it to follow that document on your existing Hermes host. The guide pins the v0.9.1 tag and requires the exact public Git commit. The local installer uses a separate Python environment, builds the PWA and performs read-only health checks without a model request. It does not install Hermes, open public ports or change routines.
 
 The installation skill can also be installed using the official Hermes URL mechanism:
 
 ```bash
-hermes skills install https://curdr-founders.codingpenguin.chatgpt.site/skills/curdr-install/SKILL.md
+hermes skills install https://raw.githubusercontent.com/DasWeltall/curdr/main/skills/curdr-install/SKILL.md
 ```
 
 Installing the skill only makes the instructions available; invoke it to actually perform setup. Keep Hermes's scanner and normal approval rules. Do not use a force-install flag.

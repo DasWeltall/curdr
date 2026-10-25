@@ -23,9 +23,9 @@ This is an **early release**, not a promise of autonomous business outcomes. Pro
 
 **Ask your existing Hermes to install it:**
 
-> Install curdr on this Hermes host. Follow https://curdr-founders.codingpenguin.chatgpt.site/install.md. Preserve my data and permissions. Keep setup token-efficient and make no paid model calls.
+> Install curdr on this Hermes host. Follow https://raw.githubusercontent.com/DasWeltall/curdr/main/install.md. Preserve my data and permissions. Keep setup token-efficient and make no paid model calls.
 
-The agent guide uses a versioned, checksummed source snapshot. It does not require reading the whole codebase or changing your global Hermes personality.
+The agent guide pins a GitHub release tag and verifies its exact Git commit. It does not require reading the whole codebase or changing your global Hermes personality.
 
 For manual setup, clone this repository. You need Python 3.11+ with venv, Node 24+, npm and a running authenticated Hermes API:
 

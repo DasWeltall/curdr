@@ -19,3 +19,5 @@ The public product website uses illustrative conversations and no model requests
 ## Website browser QA
 
 Desktop: Brain dump, Reality check and Morning brief each render the appropriate example response and compact result card. Reset and FAQ expansion work. The copy control reports its manual fallback on the HTTP preview; its HTTPS behavior is checked separately after deployment. A 390px iframe viewport (375px content area after the scrollbar) renders without horizontal overflow after correcting a decorative background. This checks responsive web layout, not a physical iPhone.
+
+Post-deployment: the copy button works under HTTPS. Direct automated requests to the marketing host return HTTP 403/error 1010 in this environment. Installation therefore uses GitHub Raw for the guide and the exact pinned Git commit for source retrieval; it no longer depends on marketing-host downloads. Physical owner-host acceptance is still outstanding.

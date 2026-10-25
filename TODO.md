@@ -65,7 +65,7 @@
 ## v0.9.1 — installable public source
 
 - [x] Redesigned product website with self-hosted Gabarito and interactive product scenarios
-- [x] Agent-facing install.md, installation skill and checksummed versioned source descriptor
+- [x] Agent-facing install.md, installation skill and verified pinned Git release
 - [x] Local preparation script, safe reconfiguration defaults, web/check CLI commands
 - [x] Capture/decide/do/check-in behavior contract and 12-case review set
 - [x] Fix recovered unknown runs blocking scheduled checks

@@ -6,15 +6,22 @@ Use only when the owner asks you to install or update curdr on their existing He
 
 Find the active curdr service, installation, Python environment, `--data` path and Hermes profile. Do not assume the default profile if another is active. For updates, take a consistent backup of the existing curdr data/configuration and retain the previous source/environment for rollback. Stop only the curdr service for the final switch, not Hermes. Keep its database, API keys, gateway token, profile, sessions, workspace, binding, origins and routines.
 
-## 2. Obtain this release
+## 2. Obtain the pinned release
 
-Read https://curdr-founders.codingpenguin.chatgpt.site/release-0.9.1.json (small descriptor). Download its HTTPS `source_url`, verify `sha256` locally, then extract its single `archive_root` into a versioned local release directory. Reject checksum mismatches or paths escaping that directory. Do not install unpinned `main` or execute a remote script through a pipe.
+Requirements also include Git. Use the public GitHub repository, not the product website CDN. Clone into a new versioned local release directory, leaving the current installation intact:
+
+```bash
+git clone --depth 1 --branch v0.9.1 https://github.com/DasWeltall/curdr.git /ABSOLUTE/NEW/RELEASE/DIRECTORY
+git -C /ABSOLUTE/NEW/RELEASE/DIRECTORY rev-parse HEAD
+```
+
+Substitute a real unused path. Require the exact commit `d3123228ccdb09b75f402200039a0d3db9eec8fd`; stop on any mismatch. Never install unpinned main or pipe a remote script into a shell. Continue from this verified checkout. The product website is only a presentation surface; installation must not depend on its automated-client access.
 
 ## 3. Prepare
 
 Requirements: Python 3.11+ with venv, Node 24+, npm, and an existing authenticated Hermes API. Add ffmpeg and `--voice` only when preserving existing voice support or the owner requests it. Do not silently install a second Hermes or reset its API key.
 
-From the extracted source, run:
+From the pinned checkout, run:
 
 ```bash
 bash scripts/install-local.sh --data /ABSOLUTE/EXISTING/CURDR/DATA
