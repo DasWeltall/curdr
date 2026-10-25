@@ -1,4 +1,4 @@
-# Install curdr · agent guide · 0.10.0
+# Install curdr · agent guide · Gateway 0.10.1 / App 0.10.0
 
 Use only when the owner asks to install/update curdr. Work quietly, use minimal tokens, and report the result. No paid model tests, full-repository reading, Android builds, public-port changes or global personality edits. Keep existing routines disabled/enabled as they are.
 
@@ -11,11 +11,11 @@ Find the active Hermes profile and any curdr service, release, Python environmen
 Clone into a real, unused absolute release directory:
 
 ```bash
-git clone --depth 1 --branch v0.10.0 https://github.com/DasWeltall/curdr.git /ABSOLUTE/NEW/RELEASE
+git clone --depth 1 --branch gateway-v0.10.1 https://github.com/DasWeltall/curdr.git /ABSOLUTE/NEW/RELEASE
 git -C /ABSOLUTE/NEW/RELEASE rev-parse HEAD
 ```
 
-Require commit `ecb3fc1d743818a35f7e0f30fcf9f7ea70c20dca`. Stop on mismatch. Continue only from this verified checkout. Use GitHub for installation; the marketing CDN can block automated clients.
+Require commit `83b37af427783f5c18353f30fe6a2ef9d5723a04`. Stop on mismatch. Continue only from this verified checkout. Use GitHub for installation; the marketing CDN can block automated clients.
 
 ## 3. Prepare Hermes
 

@@ -1,6 +1,7 @@
 {
-  "version": "0.10.0",
-  "tag": "v0.10.0",
-  "commit": "ecb3fc1d743818a35f7e0f30fcf9f7ea70c20dca",
+  "version": "0.10.1",
+  "app_version": "0.10.0",
+  "tag": "gateway-v0.10.1",
+  "commit": "83b37af427783f5c18353f30fe6a2ef9d5723a04",
   "agent_guide": "https://raw.githubusercontent.com/DasWeltall/curdr/main/install.md"
 }

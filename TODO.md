@@ -89,3 +89,5 @@
 - [x] Website/server separation and first-user validation guide.
 - [ ] Phone verification with owner's FCM/Expo credentials (not provided).
 - [ ] Clean-machine live provider install and user's actual Hermes acceptance test.
+
+- [x] Gateway 0.10.1: receipt polling does not hold up new attention notifications.
