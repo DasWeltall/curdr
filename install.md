@@ -1,4 +1,4 @@
-# Install curdr · agent guide · App/Gateway 0.10.2
+# Install curdr · agent guide · App/Gateway 0.10.3
 
 Use only when the owner asks to install/update curdr. Work quietly, use minimal tokens, and report the result. No paid model tests, full-repository reading, Android builds, public-port changes or global personality edits. Keep existing routines disabled/enabled as they are.
 
@@ -11,11 +11,11 @@ Find the active Hermes profile and any curdr service, release, Python environmen
 Clone into a real, unused absolute release directory:
 
 ```bash
-git clone --depth 1 --branch v0.10.2 https://github.com/DasWeltall/curdr.git /ABSOLUTE/NEW/RELEASE
+git clone --depth 1 --branch v0.10.3 https://github.com/DasWeltall/curdr.git /ABSOLUTE/NEW/RELEASE
 git -C /ABSOLUTE/NEW/RELEASE rev-parse HEAD
 ```
 
-Require commit `1a48a410e7253dc821bff834bb94a638da31719d`. Stop on mismatch. Continue only from this verified checkout. Use GitHub for installation; the marketing CDN can block automated clients.
+Require commit `7e639ccbeb533b685da2467fca6bd46205cdeed7`. Stop on mismatch. Continue only from this verified checkout. Use GitHub for installation; the marketing CDN can block automated clients.
 
 ## 3. Prepare Hermes
 
@@ -37,9 +37,9 @@ First install: add `--hermes-env /ABSOLUTE/ACTIVE/HERMES/.env` and the actual `-
 
 ## 5. Serve, pair, report
 
-The installer prepares a release; it does not switch/restart an existing service. Verify that its executable/Python environment and `web_dir` refer to the new release, restart it with the same data path, then check the live authenticated `/health` reports `0.10.2`. For an existing Docker deployment, update its actual image/service while preserving volumes and configuration; do not accidentally run a parallel host installation.
+The installer prepares a release; it does not switch/restart an existing service. Verify that its executable/Python environment and `web_dir` refer to the new release, restart it with the same data path, then check the live authenticated `/health` reports `0.10.3`. For an existing Docker deployment, update its actual image/service while preserving volumes and configuration; do not accidentally run a parallel host installation.
 
-The native media-upload repair is client-side. Tell Android users to install the 0.10.2 APK; a gateway-only update cannot fix the old APK. Web/PWA users should reopen/reload after deployment. For the visual guidance, update the gateway too. Keep any owner-edited co-founder skill intact; review it if it explicitly tells the agent to avoid visualizations.
+The native media-upload repair is client-side. Tell Android users to install the 0.10.3 APK; a gateway-only update cannot fix the old APK. Web/PWA users should reopen/reload after deployment. For the visual guidance, update the gateway too. Keep any owner-edited co-founder skill intact; review it if it explicitly tells the agent to avoid visualizations.
 
 
 Start/restart the existing curdr service with this release's `.venv-curdr/bin/curdr-gateway serve --data ACTUAL_PATH` (one worker). Keep the same persistent data path. First installs need a persistent process/service and the owner's HTTPS reverse proxy/VPN; preserve SSE streaming without response buffering. Loopback alone is not a phone URL. Do not open public ports yourself.
