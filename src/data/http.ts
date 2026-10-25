@@ -1,3 +1,6 @@
+import {networkFetch} from "./networkFetch";
+import {buildUploadForm,VOICE_LIMIT} from "./multipart";
+import {readUploadFile} from "./uploadFile";
 import EventSource from "react-native-sse";
 import {
   AgentEvent,
@@ -20,7 +23,7 @@ export class HttpTransport implements Transport {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), path === "/message" || path === "/audio" || path === "/transcribe" ? 3600000 : 120000);
     try {
-    const res = await fetch(`${this.url}${path}`, {
+    const res = await networkFetch(`${this.url}${path}`, {
       method,
       signal: controller.signal,
       headers: {
@@ -95,24 +98,11 @@ export class HttpTransport implements Transport {
     await this.request(`/skills/${encodeURIComponent(id)}`, "PUT", { enabled });
   }
   async upload(file: Upload): Promise<OutputFile> {
-    const form = new FormData();
-    if (file.file) form.append("file", file.file);
-    else
-      form.append("file", {
-        uri: file.uri,
-        name: file.name,
-        type: file.mimeType ?? "application/octet-stream",
-      } as unknown as Blob);
-    if (file.channel) form.append("channel", file.channel);
+    const form=await buildUploadForm(file,file.channel?{channel:file.channel}:{},readUploadFile);
     return this.request("/files", "POST", form);
   }
   async audio(file: VoiceUpload) {
-    const form = new FormData();
-    if (file.file) form.append("file", file.file);
-    else form.append("file", {uri:file.uri,name:file.name,type:file.mimeType || "audio/mp4"} as unknown as Blob);
-    form.append("duration", String(file.duration));
-    form.append("channel", file.channel || "main");
-    form.append("peaks", JSON.stringify(file.peaks || []));
+    const form=await buildUploadForm(file,{duration:String(file.duration),channel:file.channel||"main",peaks:JSON.stringify(file.peaks||[])},readUploadFile,VOICE_LIMIT);
     await this.request("/audio", "POST", form);
   }
   async refreshHermes(){await this.request('/runtime/refresh','POST',{});}
@@ -121,10 +111,7 @@ export class HttpTransport implements Transport {
   async jobControl(id:string,action:'pause'|'resume'|'run'){await this.request('/runtime/jobs/'+encodeURIComponent(id)+'/'+action,'POST',{});}
   async visual(fileId:string,block:number,change:{value?:number;item?:number;done?:boolean}) {await this.request('/visuals/'+encodeURIComponent(fileId),'PUT',{block,...change});}
   async transcribe(file: VoiceUpload): Promise<string> {
-    const form = new FormData();
-    if (file.file) form.append("file", file.file);
-    else form.append("file", {uri:file.uri,name:file.name,type:file.mimeType || "audio/mp4"} as unknown as Blob);
-    form.append("duration",String(file.duration));
+    const form=await buildUploadForm(file,{duration:String(file.duration)},readUploadFile,VOICE_LIMIT);
     return (await this.request("/transcribe","POST",form)).text;
   }
   async channel(id: string, context: string) { await this.request("/channels/" + encodeURIComponent(id), "PUT", {context}); }

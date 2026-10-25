@@ -1,0 +1,9 @@
+# curdr 0.10.2
+
+Fixes `Unsupported FormDataPart implementation` when sending a native recording, transcribing a Brain Dump, or uploading a photo/file. Expo 58's default fetch rejects the old React Native `{uri,name,type}` form parts. Uploads now use real Expo File/Blob byte readers with the selected filename/MIME, through one shared form builder and explicit Expo native fetch. Browser File/Blob paths are preserved. Fetch creates the multipart boundary. Empty/unavailable files and the gateway's 8 MB recording / 10 MB file limits are checked before send. Attachment errors retain their actual cause; recording send failures retain the recording for retry.
+
+Regression tests reproduce the original exception with the installed Expo encoder, then decode the corrected multipart body and verify exact binary bytes, MIME, filename, channel, duration and measured peaks for native voice, Brain Dump, camera and PDF samples. Browser Files and camera blob URIs are also covered. These tests are not a claim of a microphone test on the owner's physical phone.
+
+Hermes guidance now defaults to one compact visual card for plans/priorities, comparisons, verified progress and what-if calculations, without requiring the user to request a visualization. One or two blocks replace long prose lists; simple conversation remains text. The Brain Dump draft array contract is kept separate. Both existing-Hermes and managed bridge instructions are updated.
+
+27 Node tests, 86 backend tests, strict TypeScript and Expo web export pass. Android 0.10.2 is required for the native upload fix; a gateway-only update cannot repair an old APK. Update the gateway too for the visual guidance. Preserve the same data path and service configuration. Actual private-network Hermes and physical-device acceptance remain to be checked on the owner's host/device.

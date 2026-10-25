@@ -85,3 +85,20 @@ def test_sleep_pauses_and_wakes_queued_work(tmp_path,monkeypatch):
         assert client.post('/task/queued/start',json={}).status_code==409
         assert client.put('/settings',json={'sleeping':False}).status_code==200
         assert client.get('/tasks').json()[0]['status']=='run'
+
+
+def test_proactive_visual_guidance_reaches_actual_hermes_request():
+    import asyncio,httpx
+    from app.existing_hermes import ExistingHermes
+    prompts=[]
+    def handle(request):
+        body=json.loads(request.content);prompts.append(body['messages'][0]['content'])
+        return httpx.Response(200,json={'choices':[{'message':{'content':'One useful move.\n```curdr\n'+json.dumps({'title':'Today','blocks':[{'type':'checklist','items':[{'text':'Ship the export','done':False}]}]})+'\n```'},'finish_reason':'stop'}]})
+    runner=ExistingHermes('http://hermes:8642',key='test',transport=httpx.MockTransport(handle))
+    result=asyncio.run(runner.ask('Help me prioritize today.',{},purpose='chat'))
+    assert 'without waiting for the user to request' in prompts[0]
+    assert 'visual replaces the long explanation' in prompts[0]
+    assert extract_visual(result)[1]['blocks'][0]['type']=='checklist'
+    # A structured brain dump must remain an array, not follow the visual-card schema.
+    prompts.clear();asyncio.run(runner.ask('Messy capture',{},purpose='braindump'))
+    assert 'Return ONLY a JSON array' in prompts[0] and 'Allowed blocks:' not in prompts[0]

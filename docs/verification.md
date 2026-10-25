@@ -1,8 +1,7 @@
-# Verification · App 0.10.0 / Gateway 0.10.1
+# Verification · App/Gateway 0.10.2
 
-- 85 Python backend tests: real-run mocks, exact approval identity/generation, advertised session/always scopes, stale rejection, channel proposal validation, push final-only events, independent receipts/consecutive delivery, persistent tickets, retry, dead-token removal, quiet hours, foreground suppression and authenticated registration.
-- 20 Node app tests; TypeScript strict check; Expo web export.
-- Browser QA against the production export: opaque Brain Dump in dark mode, Make a plan, Start / Save for later, closed visualization entries, settings grouping and Gabarito.
-- Official Hermes approval payload and allowed choices were checked against upstream API source. Broader permissions are never inferred.
-- Bootstrap syntax/help checked. Fresh Hermes/provider setup and configured FCM device delivery require actual owner environment/credentials; not claimed as tested here.
-- No paid model calls or access to the owner’s private network Hermes during verification.
+- 27 Node tests, including the exact Expo 58 FormData exception and binary multipart round trips for native voice/transcription/photo/PDF and browser File/blob-URI uploads. Tests use the installed Expo converter and FormData patch, not a replacement serializer.
+- 86 backend tests including generated compact visual persistence/interactions, real outgoing Hermes prompt guidance, Brain Dump JSON contract, scoped approvals, independent push receipts and existing gateway controls.
+- Strict TypeScript and production Expo web export.
+- Native Android build/signature/microphone-permission checks run in GitHub Actions. Physical microphone and owner-host Hermes tests are not inferred from encoding/build success.
+- No paid model test calls. No access to the owner's private network Hermes.

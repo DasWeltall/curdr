@@ -91,3 +91,14 @@
 - [ ] Clean-machine live provider install and user's actual Hermes acceptance test.
 
 - [x] Gateway 0.10.1: receipt polling does not hold up new attention notifications.
+
+## v0.10.2 — media upload repair
+
+- [x] Reproduce Unsupported FormDataPart implementation against the installed Expo encoder.
+- [x] Shared real-file multipart path for voice send, Brain Dump transcription and attachments.
+- [x] Native Expo File bytes with selected filename/MIME; standard browser File/Blob uploads.
+- [x] Multipart boundaries remain owned by fetch; reject missing/empty/oversized recordings.
+- [x] Keep actual attachment failure messages; do not suggest Demo mode as a repair.
+- [x] Default compact native cards for plans, priorities, comparisons, progress and what-if inputs.
+- [x] Keep Brain Dump's JSON draft contract separate from visual cards.
+- [ ] Physical-device acceptance with the owner's actual Hermes.
