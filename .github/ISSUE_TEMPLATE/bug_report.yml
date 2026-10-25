@@ -1,0 +1,21 @@
+name: Bug report
+description: A reproducible problem in a real curdr flow
+title: "[Bug]: "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Include expected behavior and minimal reproduction steps. Remove credentials and private data.
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      placeholder: curdr, Hermes, Android/browser, gateway OS
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Sanitized evidence
+      description: Relevant error or screenshot. No tokens, recordings or customer data.

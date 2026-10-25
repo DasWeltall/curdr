@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" /><meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  /><title>curdr · Viewport QA</title
+  ><style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      background: #e4e2dc;
+      font: 14px system-ui;
+    }
+    header {
+      height: 52px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: center;
+    }
+    button {
+      padding: 7px 14px;
+      border: 1px solid #bbb;
+      border-radius: 20px;
+      background: #f9f8f5;
+      cursor: pointer;
+    }
+    iframe {
+      display: block;
+      margin: 0 auto;
+      border: 0;
+      box-shadow: 0 2px 30px #0001;
+      height: 844px;
+      max-width: 100%;
+    }
+  </style>
+  <header>
+    <b>Viewport</b><button onclick="resize(360)">360 px</button
+    ><button onclick="resize(390)">390 px</button
+    ><button onclick="resize(430)">430 px</button
+    ><button onclick="resize(1024)">Desktop</button><button onclick="toggleKeyboard()">Keyboard</button>
+  </header>
+  <iframe title="curdr app" src="/" width="390"></iframe>
+  <script>
+    let keyboardOpen=false;
+    function toggleKeyboard(){
+      keyboardOpen=!keyboardOpen;
+      document.querySelector('iframe').style.height=(keyboardOpen?500:844)+'px';
+    }
+    function resize(w) {
+      document.querySelector("iframe").width = w;
+      history.replaceState(null, "", "?w=" + w);
+    }
+    resize(Number(new URLSearchParams(location.search).get("w")) || 390);
+  </script>
+</html>

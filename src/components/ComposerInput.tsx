@@ -1,0 +1,5 @@
+import React,{useRef,useEffect} from 'react';
+import { TextInput } from 'react-native';
+import { useTheme } from '../theme';
+export interface ComposerInputProps {height?:number;value:string;onChange:(text:string)=>void;onHeight:(height:number)=>void;onFocus:()=>void;onBlur:()=>void;onSend:()=>void;placeholder?:string;focusRequest?:number;}
+export function ComposerInput({height=24,value,onChange,onHeight,onFocus,onBlur,focusRequest,placeholder='Message…'}:ComposerInputProps){const {c,fs}=useTheme();const ref=useRef<React.ComponentRef<typeof TextInput>>(null);useEffect(()=>{if(focusRequest)ref.current?.focus();},[focusRequest]);return <TextInput ref={ref} accessibilityLabel="Message" value={value} onChangeText={onChange} multiline placeholder={placeholder} placeholderTextColor={c.mute} underlineColorAndroid="transparent" onContentSizeChange={event=>onHeight(Math.max(24,Math.min(120,event.nativeEvent.contentSize.height)))} onFocus={onFocus} onBlur={onBlur} textAlignVertical="top" style={{height,width:'100%',flexShrink:0,minHeight:24,maxHeight:120,padding:0,borderWidth:0,fontFamily:'Gabarito_400Regular',fontSize:16*fs,lineHeight:24,color:c.ink}}/>;}

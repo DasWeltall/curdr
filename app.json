@@ -1,0 +1,60 @@
+{
+  "expo": {
+    "name": "curdr",
+    "slug": "curdr",
+    "scheme": "curdr",
+    "version": "0.9.1",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "icon": "./assets/icon.png",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "net.curdr.app"
+    },
+    "android": {
+      "package": "net.curdr.app",
+      "permissions": [
+        "RECORD_AUDIO"
+      ],
+      "softwareKeyboardLayoutMode": "resize",
+      "versionCode": 10
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "name": "curdr",
+      "shortName": "curdr",
+      "favicon": "./assets/icon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Choose photos to attach to your messages.",
+          "cameraPermission": "Take photos to attach to your messages.",
+          "microphonePermission": "Record voice messages for your assistant."
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Record voice messages for your assistant.",
+          "enableBackgroundRecording": false
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Take photos to attach to your messages.",
+          "recordAudioAndroid": true
+        }
+      ],
+      "./plugins/with-lan-network"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

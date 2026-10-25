@@ -1,0 +1,3 @@
+import React,{useState} from 'react';
+import {RangeProps,SliderVisual} from './SliderVisual';
+export function RangeSlider(props:RangeProps){const [active,setActive]=useState(false);return <SliderVisual {...props} active={active}>{React.createElement('input',{type:'range','aria-label':props.label,min:props.min,max:props.max,step:props.step||1,value:props.value,onPointerDown:()=>setActive(true),onPointerUp:()=>setActive(false),onPointerCancel:()=>setActive(false),onFocus:()=>setActive(true),onBlur:()=>setActive(false),onChange:(event:React.ChangeEvent<HTMLInputElement>)=>props.onChange(Number(event.currentTarget.value)),style:{position:'absolute',inset:0,width:'100%',height:52,margin:0,cursor:'pointer',opacity:0,outline:'none',touchAction:'pan-y'}})}</SliderVisual>;}

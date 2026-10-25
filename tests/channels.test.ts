@@ -1,0 +1,10 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {channelId,mentions,conversation} from '../src/data/channels';
+import {hsvToHex,hexToHsv} from '../src/data/color';
+import {normalizeAgent,shapes} from '../src/data/agent';
+import {Message} from '../src/data/types';
+test('mentions are explicit, deduplicated, bounded and normalized',()=>{assert.deepEqual(mentions('Ask #Launch, then #research and #LAUNCH'),['launch','research']);assert.equal(channelId(' My Project! '),'my-project');assert.deepEqual(mentions('x#not-a-mention'),[]);assert.equal(mentions('#a #b #c #d').length,3);});
+test('channel conversations never mix independent transcripts',()=>{const make=(id:string,channel?:string):Message=>({id,channel,role:'user',kind:'text',text:id,createdAt:'2026-10-24'});const all=[make('main'),make('legacy','inbox'),make('private','launch'),make('other','research')];assert.deepEqual(conversation(all).map(m=>m.id),['main','legacy']);assert.deepEqual(conversation(all,'launch').map(m=>m.id),['private']);});
+test('color controls round-trip and clamp RGB values',()=>{for(const hex of ['#FFFFFF','#000000','#9AAEFA','#A6CDB6','#FF0000']){const {h,s,v}=hexToHsv(hex);assert.equal(hsvToHex(h,s,v),hex);}assert.equal(hsvToHex(720,5,5),'#FF0000');});
+test('old cat presets migrate to the available shape set',()=>{assert.ok(!shapes.includes('cat' as never));assert.equal(normalizeAgent({shape:'cat' as never}).shape,'fluid');});

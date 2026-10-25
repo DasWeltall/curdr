@@ -1,0 +1,83 @@
+services:
+  gateway:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports: ["${CURDR_BIND_HOST:-127.0.0.1}:8000:8000"]
+    environment:
+      CURDR_TOKEN: ${CURDR_TOKEN:?Generate a token in .env}
+      CURDR_AGENT_MODE: ${CURDR_AGENT_MODE:-hermes}
+      CURDR_HERMES_URL: http://hermes:8090
+      CURDR_MODELS: ${CURDR_MODELS:-openai/gpt-4.1-mini}
+      CURDR_MAX_BUDGET: ${CURDR_MAX_BUDGET:-20}
+      CURDR_ORIGINS: ${CURDR_ORIGINS:-http://localhost:8000,http://localhost:8081,http://localhost:3000}
+    volumes: ["state:/data"]
+    networks: [private]
+    read_only: true
+    tmpfs: ["/tmp:size=32m,mode=1777"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 128
+    mem_limit: 512m
+    restart: unless-stopped
+  hermes:
+    profiles: [agent]
+    build:
+      context: .
+      dockerfile: backend/hermes/Dockerfile
+    networks: [private]
+    volumes: ["hermes-state:/opt/data"]
+    read_only: true
+    tmpfs:
+      ["/tmp:size=128m,mode=1777", "/workspace:uid=1000,gid=1000,size=128m"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 128
+    mem_limit: 2g
+    restart: unless-stopped
+  model-proxy:
+    profiles: [agent]
+    user: "0:10001"
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command:
+      [
+        python,
+        -m,
+        uvicorn,
+        "app.proxy:create_proxy",
+        --factory,
+        --host,
+        "0.0.0.0",
+        --port,
+        "8091",
+        --workers,
+        "1",
+      ]
+    environment:
+      CURDR_PROXY_ENABLED: "1"
+      CURDR_PROVIDER_URL: ${CURDR_PROVIDER_URL:-https://openrouter.ai/api/v1}
+      CURDR_MODEL_PRICES: ${CURDR_MODEL_PRICES:-}
+      CURDR_MAX_BUDGET: ${CURDR_MAX_BUDGET:-20}
+      CURDR_MIN_INTERVAL: ${CURDR_MIN_INTERVAL:-2}
+    volumes: ["state:/data"]
+    secrets: [provider_key]
+    networks: [private, egress]
+    read_only: true
+    tmpfs: ["/tmp:size=32m,mode=1777"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 64
+    mem_limit: 256m
+    restart: unless-stopped
+networks:
+  private:
+    internal: true
+  egress: {}
+volumes:
+  state: {}
+  hermes-state: {}
+secrets:
+  provider_key:
+    file: ./secrets/provider_key

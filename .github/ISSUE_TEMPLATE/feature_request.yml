@@ -1,0 +1,18 @@
+name: Workflow request
+description: A founder problem that deserves attention
+title: "[Workflow]: "
+body:
+  - type: textarea
+    id: job
+    attributes:
+      label: What are you trying to get done?
+    validations:
+      required: true
+  - type: textarea
+    id: friction
+    attributes:
+      label: Where does the current workflow add cognitive load?
+  - type: textarea
+    id: signal
+    attributes:
+      label: What would a useful outcome look like?

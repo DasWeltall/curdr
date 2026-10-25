@@ -1,0 +1,10 @@
+node_modules
+.git
+.expo
+upload
+secrets
+.env
+*.db
+__pycache__
+.pytest_cache
+docs/screenshots
