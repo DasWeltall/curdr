@@ -1,3 +1,4 @@
+import {useLocalSearchParams} from "expo-router";
 import {FounderInterview} from '../src/screens/FounderInterview';
 import { KeyboardAvoidingView } from '../src/components/KeyboardLayout';
 import { Markdown } from "../src/components/Markdown";
@@ -270,6 +271,8 @@ export default function App() {
       void navigator.serviceWorker.register("/sw.js").catch(() => {});
   }, []);
   const openChannel = (input: string) => { const tag=channelId(input); if (tag === "main" || tag === "inbox") {setOverlay(null);setTab("chat");} else setOverlay({ kind: "channel", tag }); };
+  const pushParams=useLocalSearchParams<{channel?:string}>();
+  useEffect(()=>{if(pushParams.channel&&/^[a-z0-9_-]{1,48}$/.test(pushParams.channel))openChannel(pushParams.channel);},[pushParams.channel]);
   const openTask = (t: Task) => setOverlay({ kind: "task", id: t.id });
   const onFiles = () => {
     setTab("comp");

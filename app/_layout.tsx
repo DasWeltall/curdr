@@ -1,5 +1,9 @@
 import "react-native-gesture-handler";
-import React from "react";
+import {PushBridge} from "../src/notifications/PushBridge";
+import React,{useEffect} from "react";
+import * as SplashScreen from "expo-splash-screen";
+import {ParticleSplash} from "../src/components/ParticleSplash";
+void SplashScreen.preventAutoHideAsync().catch(()=>{});
 import { KeyboardProvider } from "../src/components/KeyboardLayout";
 import { Stack } from "expo-router";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -16,13 +20,16 @@ export default function Layout() {
     Gabarito_600SemiBold,
     Gabarito_700Bold,
   });
+  useEffect(()=>{if(loaded||error)void SplashScreen.hideAsync();},[loaded,error]);
   if (!loaded && !error) return null;
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <KeyboardProvider><SafeAreaProvider>
         <StoreProvider>
           <ThemeProvider>
+            <PushBridge/>
             <Stack screenOptions={{ headerShown: false, animation: "none" }} />
+            <ParticleSplash/>
           </ThemeProvider>
         </StoreProvider>
       </SafeAreaProvider></KeyboardProvider>

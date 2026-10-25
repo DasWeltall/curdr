@@ -75,7 +75,7 @@ export function Icon({
       strokeLinecap="round"
       strokeLinejoin="round"
     >
-      <Path d={paths[name]} />
+      {name==='play'?<Path d="M8 5.7c0-1 1.1-1.6 1.9-1.1l10 6.3c.9.5.9 1.7 0 2.2l-10 6.3c-.8.5-1.9-.1-1.9-1.1Z" fill={color??c.ink} stroke="none"/>:name==='pause'?<><Rect x={6} y={5} width={4} height={14} rx={1.6} fill={color??c.ink} stroke="none"/><Rect x={14} y={5} width={4} height={14} rx={1.6} fill={color??c.ink} stroke="none"/></>:name==='stop'?<Rect x={6} y={6} width={12} height={12} rx={3} fill={color??c.ink} stroke="none"/>:<Path d={paths[name]} />}
       {name === "search" && <Circle cx={11} cy={11} r={6.5} />}
 
     </Svg>

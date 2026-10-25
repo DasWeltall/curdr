@@ -29,3 +29,7 @@ public/downloads/
 
 .local/
 .venv-curdr/
+
+# Private notification provider configuration
+google-services.json
+*firebase-adminsdk*.json

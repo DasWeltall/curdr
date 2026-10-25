@@ -1,5 +1,5 @@
 // Cache the app shell only. Never cache Gateway/SSE responses or credentials.
-const CACHE='curdr-shell-v6';
+const CACHE='curdr-shell-v7';
 self.addEventListener('install',()=>self.skipWaiting());
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(['/','/manifest.webmanifest','/icon-192.png','/icon-512.png']))));
 self.addEventListener('activate',event=>event.waitUntil(self.clients.claim()));

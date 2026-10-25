@@ -72,3 +72,20 @@
 - [x] Seven-day challenge plan with three evidence-based content angles per day
 - [ ] Real owner-host install, phone acceptance tests and paid model behavior trials
 - [ ] Semantic duplicate suppression, interruption budgets and event-triggered checks
+
+## v0.10.0 — capture to useful work
+
+- [x] Opaque Brain Dump; record → Make a plan → automatic transcription.
+- [x] Filled rounded playback controls; waveform adapts to available width.
+- [x] Start proposed work explicitly; park thoughts without completing tasks.
+- [x] Closed visualization rows in Files; previews open on tap.
+- [x] Agent-led channel request and validated context creation through chat.
+- [x] Hermes-advertised once/session/rule approvals, exact prompt identity.
+- [x] Profile/install settings spacing; bundled Gabarito on web.
+- [x] Relevant short answers without mechanically fragmenting prose.
+- [x] Opt-in Android push pipeline, persistent delivery state, quiet hours and revocation.
+- [x] Original seed icon and brief particle entrance with reduced motion.
+- [x] First-install bootstrap; concise README without build-in-public marketing.
+- [x] Website/server separation and first-user validation guide.
+- [ ] Phone verification with owner's FCM/Expo credentials (not provided).
+- [ ] Clean-machine live provider install and user's actual Hermes acceptance test.

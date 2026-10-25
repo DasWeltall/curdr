@@ -83,7 +83,7 @@ export class HttpTransport implements Transport {
       text,
     });
   }
-  async approval(id: string, decision: "approve" | "later") {
+  async approval(id: string, decision: "approve" | "later" | "session" | "always") {
     await this.request(`/approval/${encodeURIComponent(id)}`, "POST", {
       decision,
     });

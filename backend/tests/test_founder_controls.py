@@ -77,8 +77,8 @@ def test_captures_preserve_original_and_parking_is_not_a_task(owner):
 def test_chat_chunks_preserve_markdown_code_and_content():
     text='One. Two. Three. Four.\n\n```python\na=1\nb=2\n```'
     result=chunks(text)
-    assert result[:2]==['One. Two.','Three. Four.']
-    assert result[-1]=='```python\na=1\nb=2\n```'
+    assert result==[text]  # preserve useful complete answers; never manufacture chat beats
+    assert chunks('  ')==[]
     assert 'Never agree merely' in instructions({'founderProfile':{'goal':'ship'}})
 
 def test_new_routes_require_authentication(owner):

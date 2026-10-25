@@ -45,7 +45,7 @@ export class LocalTransport implements Transport {
   async braindump(_text: string): Promise<Draft[]> { return this.unavailable(); }
   async commitDraft(_draft: Draft, _start: boolean): Promise<Task> { return this.unavailable(); }
   async task(_id: string, _action: TaskAction, _text?: string) { this.unavailable(); }
-  async approval(_id: string, _decision: 'approve' | 'later') { this.unavailable(); }
+  async approval(_id: string, _decision: 'approve' | 'later' | 'session' | 'always') { this.unavailable(); }
   async skill(_id: string, _enabled: boolean) { this.unavailable(); }
   async upload(_file: Upload): Promise<OutputFile> { return this.unavailable(); }
   async audio(_file: VoiceUpload) { this.unavailable(); }

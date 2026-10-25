@@ -42,10 +42,11 @@ export interface Approval {
   taskId: string;
   kind: "send" | "pay" | "delete" | "tool" | "clarify";
   runId?: string; requestId?: string; executionGeneration?: number; command?: string; choices?: string[]; channel?: string;
+  allowedChoices?: ("once" | "session" | "always" | "deny")[];
   title: string;
   amount?: string;
   expiresAt: string;
-  decision?: "approve" | "later";
+  decision?: "approve" | "later" | "session" | "always";
   state?: "pending" | "approved" | "deferred" | "expired" | "denied";
   recipient?: string;
   subject?: string;
@@ -151,7 +152,7 @@ export interface Transport {
   braindump: (text: string) => Promise<Draft[]>;
   commitDraft: (draft: Draft, start: boolean) => Promise<Task>;
   task: (id: string, action: TaskAction, text?: string) => Promise<void>;
-  approval: (id: string, decision: "approve" | "later") => Promise<void>;
+  approval: (id: string, decision: "approve" | "later" | "session" | "always") => Promise<void>;
   settings: (patch: Partial<Settings>) => Promise<void>;
   skill: (id: string, enabled: boolean) => Promise<void>;
   upload: (file: Upload) => Promise<OutputFile>;

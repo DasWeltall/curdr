@@ -106,7 +106,9 @@ class LiveRuntime:
         elif kind in ('message.interim','assistant.commentary'):
             if event.get('already_streamed'):return
             text=safe_text(event.get('text'),10000)
-            if text:self.db.message(text,channel)
+            if text:
+                run['activities'].append(dict(id=uid(),type='agent.update',title='Agent update',detail=text,at=now()))
+                run['activities']=run['activities'][-80:]
         elif kind.startswith('tool.'):
             tool=safe_text(event.get('tool') or event.get('tool_name') or 'Tool',120)
             preview=safe_text(event.get('preview') or event.get('delta'))
@@ -179,6 +181,7 @@ class LiveRuntime:
         seconds=prompt.get('timeout_s')
         expiry=(datetime.now(timezone.utc)+timedelta(seconds=seconds)).isoformat() if isinstance(seconds,(int,float)) and 0<seconds<86400 else ''
         value=dict(id=identity,taskId=task_id or '',runId=run_id,requestId=request,channel=channel,kind='clarify' if clarify else 'tool',title='Your input is needed' if clarify else 'Review this action',body=safe_text(prompt.get('question') or prompt.get('description') or 'Hermes is waiting for your decision.',10000),command=safe_text(prompt.get('command',''),20000),choices=[safe_text(s,100) for s in prompt.get('choices',[]) if isinstance(s,str)][:12],expiresAt=expiry,state='pending')
+        if not clarify:value['allowedChoices']=[s for s in prompt.get('choices', ['once','deny']) if s in ('once','session','always','deny')]
         if generation is not None:value['executionGeneration']=generation
         if prompt.get('edit'):value['body']+='\n'+safe_text(json.dumps(prompt['edit'],ensure_ascii=False,indent=2),10000)
         self.db.event('approval',value)
@@ -191,10 +194,13 @@ class LiveRuntime:
         body={'request_id':approval['requestId']}
         if approval.get('executionGeneration') is not None:body['execution_generation']=approval['executionGeneration']
         if approval['kind']=='clarify':body['answer']=answer or '';endpoint='clarify'
-        else:body['choice']='once' if decision=='approve' else 'deny';endpoint='approval'
-        # Never widen a decision to session/always or resolve another pending prompt.
+        else:
+            choice={'approve':'once','later':'deny','session':'session','always':'always'}.get(decision)
+            if choice not in approval.get('allowedChoices',['once','deny']):raise ValueError('Hermes does not allow this permission scope for this action.')
+            body['choice']=choice;endpoint='approval'
+        # Identity and generation always refer to this exact pending prompt.
         await self.adapter.request('/v1/runs/'+approval['runId']+'/'+endpoint,'POST',body)
-        self.db.event('approval',{**approval,'state':'approved' if decision=='approve' else 'denied'})
+        self.db.event('approval',{**approval,'state':'approved' if decision in ('approve','session','always') else 'denied','decision':decision})
         self.resume_task(approval.get('taskId'))
 
     async def ask(self,text,settings,history=None,purpose='chat',skills=None,channel='main',workspace='',task_id=None):
@@ -205,7 +211,7 @@ class LiveRuntime:
         session=self.db.get('meta','session:'+channel)
         if self.root:workspace+='\nSave files and screenshots for the user in this shared workspace directory: '+str(self.root)+'. Include useful outputs there so curdr can show them. Do not access other curdr configuration or credential files.'
         async def callback(event):
-            if purpose in ('proactive','briefing') and event.get('event') in ('message.delta','assistant.delta','message.interim','assistant.commentary'):return
+            if purpose in ('proactive','briefing','channel') and event.get('event') in ('message.delta','assistant.delta','message.interim','assistant.commentary'):return
             await self.event(event,channel,task_id)
         try:
             output=await self.adapter.ask(text,settings,None if session else history,purpose,skills,channel,workspace,on_event=callback,session_id=session.get('id') if session else None)

@@ -75,11 +75,11 @@ export class DemoTransport extends LocalTransport {
   override async braindump(text: string): Promise<Draft[]> { return text.split(/\n|;/).filter(s => s.trim()).slice(0,12).map(s => ({id:uid(),title:s.trim(),sub:'Review before starting.',channel:mentions(s)[0] || 'launch'})); }
   override async commitDraft(draft: Draft, start: boolean): Promise<Task> { const task: Task = {...draft,status:start?'review':'up',source:'chat',summary:start?'Demo result ready to review.':'Ready when you are.',updatedAt:new Date().toISOString()}; this.emit({type:'task_update',data:task}); return task; }
   override async task(id: string, action: TaskAction, text?: string) { const t=this.state.tasks.find(t=>t.id===id); if(!t)return; if(action==='delete') { this.emit({type:'task_removed',data:{id}}); return; } this.emit({type:'task_update',data:{...t,status:action==='done'?'done':action==='start'?'run':'up',summary:text || (action==='done'?'Completed.':'Updated.'),updatedAt:new Date().toISOString()}}); }
-  override async approval(id:string,decision:'approve'|'later') {
+  override async approval(id:string,decision:'approve'|'later'|'session'|'always') {
     const approval=this.state.approvals.find(a=>a.id===id);
     if(!approval||approval.state!=='pending')throw Error('This request was already handled.');
-    this.emit({type:'approval',data:{...approval,state:decision==='approve'?'approved':'denied'}});
-    this.text(decision==='approve'?'Demo decision recorded. In a connected workspace, this approves only that specific Hermes action.':'Demo action denied. Nothing was executed.');
+    this.emit({type:'approval',data:{...approval,state:decision!=='later'?'approved':'denied'}});
+    this.text(decision!=='later'?'Demo decision recorded. In a connected workspace, this approves only that specific Hermes action.':'Demo action denied. Nothing was executed.');
   }
   private wait(ms:number) { return new Promise<void>(resolve=>{this.waiters.add(resolve);this.later(()=>{this.waiters.delete(resolve);resolve();},ms);}); }
   private async streamPreview(text:string,channel:string,generation:number) {

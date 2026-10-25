@@ -3,7 +3,7 @@
     "name": "curdr",
     "slug": "curdr",
     "scheme": "curdr",
-    "version": "0.9.1",
+    "version": "0.10.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "icon": "./assets/icon.png",
@@ -17,7 +17,7 @@
         "RECORD_AUDIO"
       ],
       "softwareKeyboardLayoutMode": "resize",
-      "versionCode": 10
+      "versionCode": 11
     },
     "web": {
       "bundler": "metro",
@@ -51,7 +51,26 @@
           "recordAudioAndroid": true
         }
       ],
-      "./plugins/with-lan-network"
+      "./plugins/with-lan-network",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/adaptive-icon.png",
+          "imageWidth": 160,
+          "backgroundColor": "#F9F8F5",
+          "dark": {
+            "backgroundColor": "#161614"
+          }
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#24352A",
+          "defaultChannel": "attention"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

@@ -3,7 +3,7 @@ import re
 from fastapi import HTTPException
 from .db import now
 
-BUILTINS=[('help','Show available commands'),('status','Current tasks and running work'),('models','List configured models'),('model','Select provider/model'),('tools','Show actual Hermes tools'),('skills','List installed skills'),('memory','Show retained founder facts'),('remember','Keep a fact for this project'),('dump','Turn a messy thought into a focused next move'),('reality-check','Challenge an idea with a small test'),('brief','Run a morning brief preview'),('stop','Stop the active run'),('new','Start a fresh channel conversation')]
+BUILTINS=[('channel','Ask Hermes to create a focused workspace'),('help','Show available commands'),('status','Current tasks and running work'),('models','List configured models'),('model','Select provider/model'),('tools','Show actual Hermes tools'),('skills','List installed skills'),('memory','Show retained founder facts'),('remember','Keep a fact for this project'),('dump','Turn a messy thought into a focused next move'),('reality-check','Challenge an idea with a small test'),('brief','Run a morning brief preview'),('stop','Stop the active run'),('new','Start a fresh channel conversation')]
 
 def catalog(db):
     result=[dict(name='/'+n,description=d) for n,d in BUILTINS]
@@ -25,8 +25,14 @@ async def execute(db,runtime,text,channel):
         return False,content+'\nUser request: '+arg
     if any(s.get('title')==name and s.get('enabled') for s in db.all('skills')):
         return False,f'Load the installed Hermes skill "{name}" using skill_view, then follow this request: {arg or "Ask what I want to do with this skill."}'
+    if name=='cancel':
+        db.put('meta','channel-intent:'+channel,{'pending':False});db.message('Channel request cancelled.',channel);return True,text
     if name not in {n for n,_ in BUILTINS}:raise HTTPException(422,'This command is not exposed by the Hermes API. Use /help for supported curdr commands; terminal-only commands must run on the host.')
     settings=db.get('settings','main');info=db.get('meta','hermes') or {};reply=''
+    if name=='channel':
+        db.put('meta','channel-intent:'+channel,{'pending':True})
+        if arg.strip():return False,'[curdr channel request] '+arg
+        db.message(text,channel,'user');db.message('What should the new channel focus on? Send its purpose, or /cancel to keep chatting.',channel);return True,text
     if name=='help':reply='\n'.join(c['name']+' — '+c['description'] for c in catalog(db))
     elif name=='status':
         tasks=db.all('tasks');active=[r for r in db.all('runs') if r.get('status') not in ('completed','failed','cancelled','interrupted','unknown','partial')]

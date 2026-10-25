@@ -41,13 +41,15 @@ class Instruction(BaseModel):
 
 
 class Decision(BaseModel):
-    decision: Literal['approve', 'later']
+    decision: Literal['approve', 'later', 'session', 'always']
 
 
 def create_app(path=None, runner=None):
     db = Database(path or os.getenv('CURDR_DB', '/data/curdr.db'))
     runner = runner or Runner()
     runtime = LiveRuntime(db,runner)
+    from .notifications import PushService
+    push=PushService(db)
     jobs: dict[str, asyncio.Task] = {}
     generation: dict[str, int] = {}
     queue = asyncio.Semaphore(1)
@@ -91,18 +93,22 @@ def create_app(path=None, runner=None):
     async def lifespan(app):
         task=asyncio.create_task(schedule())
         monitor=asyncio.create_task(runtime.monitor())
+        notifications=asyncio.create_task(push.monitor())
         yield
         runtime.closing=True
         if runtime.adapter:runtime.adapter.detaching=True
         task.cancel()
         monitor.cancel()
+        notifications.cancel()
         for job in jobs.values():
             job.cancel()
-        await asyncio.gather(task,monitor,*jobs.values(),return_exceptions=True)
+        await asyncio.gather(task,monitor,notifications,*jobs.values(),return_exceptions=True)
         db.conn.close()
 
-    app=FastAPI(title='curdr Gateway',version='0.9.0',lifespan=lifespan)
+    app=FastAPI(title='curdr Gateway',version='0.10.0',lifespan=lifespan)
     app.state.db=db
+    from .notifications import register as register_push
+    register_push(app,db,auth,push)
     from .workspace_api import register
     register(app,db,runtime,runner,auth,queue)
     from .commands import catalog
@@ -179,7 +185,7 @@ def create_app(path=None, runner=None):
         ready=await runner.health() if runner.mode=='hermes' else False
         info=db.get('meta','hermes') or {}
         tools={name for group in info.get('toolsets',[]) if group.get('enabled') and group.get('configured') for name in group.get('tools',[]) if isinstance(name,str)}
-        return dict(ok=True,agent=runner.mode,connection_type='existing' if getattr(runner,'existing',None) else 'managed',agent_status='ready' if ready else 'unavailable' if runner.mode=='hermes' else 'mock',version='0.9.0',capabilities=dict(chat=ready,planning=ready,memory=ready,skills=ready,visuals=ready,sleep=ready,audio=ready and getattr(runner,'audio_ready',False),channels=ready,terminal=ready and any(name in tools for name in ('terminal','terminal_exec')),browser=ready and 'browser_exec' in tools,connectors=False,streaming=ready and bool(info.get('streaming')),approvals=ready and bool(info.get('approvals'))))
+        return dict(ok=True,agent=runner.mode,connection_type='existing' if getattr(runner,'existing',None) else 'managed',agent_status='ready' if ready else 'unavailable' if runner.mode=='hermes' else 'mock',version='0.10.0',capabilities=dict(chat=ready,planning=ready,memory=ready,skills=ready,visuals=ready,sleep=ready,audio=ready and getattr(runner,'audio_ready',False),channels=ready,terminal=ready and any(name in tools for name in ('terminal','terminal_exec')),browser=ready and 'browser_exec' in tools,connectors=False,streaming=ready and bool(info.get('streaming')),approvals=ready and bool(info.get('approvals'))))
 
     @app.get('/runtime',dependencies=[Depends(auth)])
     async def runtime_info():
@@ -332,10 +338,20 @@ def create_app(path=None, runner=None):
         if not body.text.strip() and not body.attachments:
             raise HTTPException(422,'The message is empty.')
         try:
+            target=channel_id(body.channel)
+            intent=db.get('meta','channel-intent:'+target) or {}
+            if intent.get('pending') and not body.text.startswith('/') and not body.attachments:
+                from .channel_creation import create_requested_channel
+                async with queue:await create_requested_channel(db,runtime,body.text,target)
+                return {'ok':True}
             if body.text.startswith('/') and not body.attachments:
                 from .commands import execute
                 handled,body.text=await execute(db,runtime,body.text,channel_id(body.channel))
                 if handled:return {'ok':True}
+                if body.text.startswith('[curdr channel request] '):
+                    from .channel_creation import create_requested_channel
+                    async with queue:await create_requested_channel(db,runtime,body.text.removeprefix('[curdr channel request] '),channel_id(body.channel))
+                    return {'ok':True}
             async with queue:
                 await respond(body.text,body.channel or MAIN,body.attachments)
         except HTTPException: raise
@@ -461,10 +477,12 @@ def create_app(path=None, runner=None):
         remote=db.get('approvals',id)
         if remote and remote.get('runId'):
             if remote.get('state')!='pending':raise HTTPException(409,'This request was already handled.')
+            if body.decision in ('session','always') and body.decision not in remote.get('allowedChoices',[]):raise HTTPException(422,'Hermes does not allow this permission scope for this action.')
             try:await runtime.decide(remote,body.decision)
             except httpx.HTTPStatusError as error:raise HTTPException(409 if error.response.status_code in (400,404,409) else 502,'Hermes rejected this decision. The prompt may have changed or expired. Refresh and review it again.')
             except (httpx.HTTPError,ValueError):raise HTTPException(502,'The decision could not be delivered to Hermes.')
             return dict(ok=True)
+        if body.decision in ('session','always'):raise HTTPException(422,'This local action can only be approved once.')
         with db.lock:
             a=db.get('approvals',id)
             if not a:
