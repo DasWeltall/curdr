@@ -1,4 +1,5 @@
-import React from 'react';
+import React,{useState} from 'react';
+import {markdownBlocks} from '../data/markdown';
 import {View,ScrollView,Linking,Pressable} from 'react-native';
 import {Txt} from './ui';
 import {useTheme} from '../theme';
@@ -15,16 +16,19 @@ function Inline({text,color,onChannel}:{text:string;color:string;onChannel:(id:s
     return part;
   })}</Txt>;
 }
+function MarkdownTable({columns,rows,color}:{columns:string[];rows:string[][];color:string}){
+ const {c}=useTheme();const [page,setPage]=useState(0),size=5,total=Math.max(1,Math.ceil(rows.length/size));const current=Math.min(page,total-1),visible=rows.slice(current*size,(current+1)*size);
+ const height=40+visible.length*60;
+ return <View style={{maxWidth:'100%',minWidth:0,gap:6}}><ScrollView horizontal nestedScrollEnabled showsHorizontalScrollIndicator style={{height,flexGrow:0,flexShrink:0}} contentContainerStyle={{height,alignItems:'flex-start'}}><View style={{height}}><View style={{height:40,flexDirection:'row',backgroundColor:c.tile,borderRadius:10}}>{columns.map((column,i)=><View key={i} style={{width:150,height:40,padding:8,justifyContent:'center'}}><Txt bold size={12} numberOfLines={1} style={{color}}>{column}</Txt></View>)}</View>{visible.map((row,i)=><View key={current*size+i} style={{height:60,flexDirection:'row',borderBottomWidth:1,borderColor:c.line}}>{columns.map((_,j)=><View key={j} style={{width:150,height:60,padding:8,justifyContent:'center'}}><Txt size={13} numberOfLines={2} style={{color}}>{row[j]||''}</Txt></View>)}</View>)}</View></ScrollView>{total>1&&<View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between',minHeight:36}}><Pressable accessibilityRole="button" disabled={!current} onPress={()=>setPage(current-1)} style={{padding:8,opacity:current?1:.3}}><Txt size={13}>Previous</Txt></Pressable><Txt size={12} muted>{current+1} / {total}</Txt><Pressable accessibilityRole="button" disabled={current>=total-1} onPress={()=>setPage(current+1)} style={{padding:8,opacity:current<total-1?1:.3}}><Txt size={13}>Next</Txt></Pressable></View>}</View>;
+}
 export function Markdown({text,color,onChannel}:{text:string;color:string;onChannel:(id:string)=>void}){
-  const {c}=useTheme();const lines=text.split('\n');const blocks:React.ReactNode[]=[];
-  for(let i=0;i<lines.length;i++){
-    const line=lines[i]!;
-    if(line.startsWith('```')){const language=line.slice(3),code=[];while(++i<lines.length&&!lines[i]!.startsWith('```'))code.push(lines[i]);blocks.push(<View key={i} style={{gap:5,paddingVertical:4}}>{!!language&&<Txt size={11} style={{color,opacity:.65}}>{language}</Txt>}<ScrollView horizontal><Txt selectable size={13} style={{fontFamily:'monospace',lineHeight:20,color}}>{code.join('\n')}</Txt></ScrollView></View>);continue;}
-    const heading=line.match(/^#{1,4}\s+(.+)/);if(heading){blocks.push(<Txt key={i} size={19} bold style={{color,marginVertical:3}}>{heading[1]}</Txt>);continue;}
-    const list=line.match(/^\s*(?:[-*+]\s+|(\d+)\.\s+)(.*)/);if(list){blocks.push(<View key={i} style={{flexDirection:'row',gap:8}}><Txt style={{color}}>{list[1]?list[1]+'.':'•'}</Txt><View style={{flex:1}}><Inline text={list[2]!} color={color} onChannel={onChannel}/></View></View>);continue;}
-    if(!line.trim()){if(blocks.length)blocks.push(<View key={i} style={{height:8}}/>);continue;}
-    if(line.trim().startsWith('|')){const rows=[line];while(i+1<lines.length&&lines[i+1]!.trim().startsWith('|'))rows.push(lines[++i]!);blocks.push(<ScrollView horizontal key={i}><View>{rows.filter(row=>!/^\|?[\s:|\-]+\|?$/.test(row)).map((row,r)=><View key={r} style={{flexDirection:'row',borderBottomWidth:1,borderColor:color+'33'}}>{row.trim().replace(/^\||\|$/g,'').split('|').map((cell,j)=><View key={j} style={{width:140,padding:8}}><Txt bold={r===0} size={14} style={{color}}>{cell.trim()}</Txt></View>)}</View>)}</View></ScrollView>);continue;}
-    blocks.push(<Inline key={i} text={line.replace(/^>\s?/,'')} color={color} onChannel={onChannel}/>);
-  }
-  return <View style={{gap:5,maxWidth:'100%'}}>{blocks}</View>;
+ const blocks=markdownBlocks(text);
+ return <View style={{gap:5,maxWidth:'100%',minWidth:0}}>{blocks.map((b,i)=>{
+  if(b.type==='table')return <MarkdownTable key={i} columns={b.columns} rows={b.rows} color={color}/>;
+  if(b.type==='blank')return <View key={i} style={{height:5}}/>;
+  if(b.type==='code')return <View key={i} style={{gap:5,paddingVertical:4,maxWidth:'100%'}}>{!!b.language&&<Txt size={11} style={{color,opacity:.65}}>{b.language}</Txt>}<ScrollView horizontal style={{flexGrow:0,maxHeight:240}}><Txt selectable size={13} style={{fontFamily:'monospace',lineHeight:20,color}}>{b.text}</Txt></ScrollView></View>;
+  if(b.type==='heading')return <Txt key={i} size={19} bold style={{color,marginVertical:3}}>{b.text}</Txt>;
+  const list=b.text.match(/^\s*(?:[-*+]\s+|(\d+)\.\s+)(.*)/);
+  return list?<View key={i} style={{flexDirection:'row',gap:8}}><Txt style={{color}}>{list[1]?list[1]+'.':'•'}</Txt><View style={{flex:1,minWidth:0}}><Inline text={list[2]!} color={color} onChannel={onChannel}/></View></View>:<Inline key={i} text={b.text.replace(/^>\s?/,'')} color={color} onChannel={onChannel}/>;
+ })}</View>;
 }

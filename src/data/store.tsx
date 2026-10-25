@@ -95,12 +95,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         settings: { ...defaults },
         iconState: "idle",
       });
-    return api.connect((e) => {
+    let active=true;
+    const stop=api.connect((e) => {
+      if(!active)return;
       dispatch((s) => reduce(s, e));
       if (api.mode === "gateway" && (e.type === "settings" || e.type === "snapshot")) void AsyncStorage.setItem("curdr-remote-profile-cache",JSON.stringify(e.type === "snapshot" ? e.data.settings : e.data)).catch(()=>{});
       if (e.type === "snapshot") setHydrated(true);
-      if (e.type === "message" && e.data.role === "agent" || e.type === "task_update" && e.data.status === "review") setSuccessUntil(Date.now() + 3200);
-    }, setStatus);
+      if (e.type === "message" && e.data.role === "agent" && !e.data.streaming || e.type === "task_update" && e.data.status === "review") setSuccessUntil(Date.now() + 3200);
+    }, value=>{if(active)setStatus(value);});
+    return()=>{active=false;stop();};
   }, [api, ready]);
   useEffect(() => {
     if (!notice) return;

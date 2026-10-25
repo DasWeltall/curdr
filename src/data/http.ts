@@ -1,3 +1,4 @@
+import {StreamCursor} from "./streamCursor";
 import {networkFetch} from "./networkFetch";
 import {buildUploadForm,VOICE_LIMIT} from "./multipart";
 import {readUploadFile} from "./uploadFile";
@@ -53,6 +54,7 @@ export class HttpTransport implements Transport {
     } finally { clearTimeout(timeout); }
   }
   connect(onEvent: (e: AgentEvent) => void, onStatus: (s: string) => void) {
+    const cursor=new StreamCursor();
     const es = new EventSource(`${this.url}/stream`, {
       headers: { Authorization: `Bearer ${this.token}` },
       pollingInterval: 3000,
@@ -61,7 +63,8 @@ export class HttpTransport implements Transport {
     es.addEventListener("message", (e) => {
       if (e.data) {
         try {
-          onEvent(JSON.parse(e.data));
+          const event=JSON.parse(e.data);
+          if(cursor.accept(event,e.lastEventId))onEvent(event);
         } catch {
           onStatus("Invalid server event");
         }
@@ -72,8 +75,8 @@ export class HttpTransport implements Transport {
     );
     return () => es.close();
   }
-  async message(text: string, channel?: string, attachments?: string[]) {
-    await this.request("/message", "POST", { text, channel, attachments });
+  async message(text: string, channel?: string, attachments?: string[],clientId?:string) {
+    await this.request("/message", "POST", { text, channel, attachments,client_id:clientId });
   }
   async braindump(text: string): Promise<Draft[]> {
     return (await this.request("/braindump", "POST", { text })).tasks;
@@ -102,7 +105,7 @@ export class HttpTransport implements Transport {
     return this.request("/files", "POST", form);
   }
   async audio(file: VoiceUpload) {
-    const form=await buildUploadForm(file,{duration:String(file.duration),channel:file.channel||"main",peaks:JSON.stringify(file.peaks||[])},readUploadFile,VOICE_LIMIT);
+    const form=await buildUploadForm(file,{duration:String(file.duration),channel:file.channel||"main",peaks:JSON.stringify(file.peaks||[]),...(file.clientId?{client_id:file.clientId}:{})},readUploadFile,VOICE_LIMIT);
     await this.request("/audio", "POST", form);
   }
   async refreshHermes(){await this.request('/runtime/refresh','POST',{});}

@@ -1,6 +1,6 @@
-<p align="center"><img src="assets/icon.png" width="88" alt="curdr"></p>
+<p align="center"><img src="assets/readme-hero.svg" width="100%" alt="curdr. Less in your head. More shipped. An open-source AI co-founder for solo founders, powered by your own Hermes."></p>
 
-# curdr
+# Your ideas need room to move.
 
 **Less in your head. More shipped.** An open-source AI co-founder for solo founders, powered by [Hermes](https://github.com/NousResearch/hermes-agent).
 
@@ -10,7 +10,7 @@ Say everything on your mind. Review a smaller plan, park distractions and start 
 
 ## Install
 
-**Upgrading from 0.9/0.10?** Install the **0.10.3 Android APK** as well as updating the gateway. The native media-upload fix is in the client; a server update alone cannot fix the old APK. Your saved server data stays in the same data directory.
+**Upgrading from 0.9/0.10?** Install the **0.11.0 Android APK** as well as updating the gateway. The native media-upload fix is in the client; a server update alone cannot fix the old APK. Your saved server data stays in the same data directory.
 
 **Already have Hermes?** Send it this:
 
@@ -30,13 +30,19 @@ Open your server's curdr URL, choose **Connect Hermes**, enter that URL and the 
 - **iPhone:** open your server URL in Safari → Share → Add to Home Screen → Open as Web App.
 - **Desktop:** use the same URL in a browser.
 
+## Where it runs
+
+curdr adds a phone-friendly interface and a small gateway **alongside your existing Hermes**. The gateway talks to the Hermes API on your server. It serves the web app too, so iPhone users need no native installation. Your conversations, profile, tasks and settings stay in the curdr data directory on that server. Model credentials stay on the host.
+
+The public website explains curdr and links to installation. It is separate from your private, self-hosted workspace.
+
 ## What you get
 
 - Voice/text brain dumps with one-step transcription and planning. **Start**, **Save for later** or **Park**; captures are not commitments.
 - Main chat and agent-created channels with separate context, real Hermes streaming and tool activity.
 - Explicit approvals, including session/rule permission only when Hermes allows it.
 - Reviewable tasks, editable routines, files and compact interactive visualizations.
-- Founder interview, editable memory and a quiet co-founder skill. Useful answers, not a long answer split into many bubbles.
+- Founder interview, editable memory and a quiet co-founder skill. A separate `curdr-chat` skill keeps replies short and interruptions useful. It applies only inside curdr; your global Hermes personality stays yours.
 - Android notification delivery code with quiet hours and sleep. **Requires your FCM/Expo build credentials and gateway opt-in**; it does not work in Expo Go. [Setup](docs/NOTIFICATIONS.md).
 
 This is an early release. Your models, tools and permissions come from your Hermes. Native iOS distribution and web push are not provided. No fake tool results or unsupported terminal commands.

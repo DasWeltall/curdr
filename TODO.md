@@ -104,3 +104,5 @@
 - [ ] Physical-device acceptance with the owner's actual Hermes.
 
 - [x] v0.10.3: browser Demo camera uses the shared real Blob/File resolver.
+
+- [x] v0.11.0: durable acknowledged outbox, stable transcript order, flat voice composer, finite tables, compact real activity and isolated curdr-chat policy.

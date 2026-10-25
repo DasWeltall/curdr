@@ -11,7 +11,7 @@ def catalog(db):
     result.extend(dict(name='/'+s['title'],description=s.get('description','Installed Hermes skill')) for s in db.all('skills') if s.get('enabled') and re.fullmatch('[a-zA-Z0-9_-]{1,80}',s.get('title','')) and s['title'] not in {n for n,_ in BUILTINS})
     return result
 
-async def execute(db,runtime,text,channel):
+async def execute(db,runtime,text,channel,client_id=None):
     match=re.match(r'^/([\w-]+)(?:\s+(.*))?$',text,re.S)
     if not match:return False,text
     name,arg=match[1],match[2] or ''
@@ -32,7 +32,7 @@ async def execute(db,runtime,text,channel):
     if name=='channel':
         db.put('meta','channel-intent:'+channel,{'pending':True})
         if arg.strip():return False,'[curdr channel request] '+arg
-        db.message(text,channel,'user');db.message('What should the new channel focus on? Send its purpose, or /cancel to keep chatting.',channel);return True,text
+        db.message(text,channel,'user',identity=client_id);db.message('What should the new channel focus on? Send its purpose, or /cancel to keep chatting.',channel);return True,text
     if name=='help':reply='\n'.join(c['name']+' — '+c['description'] for c in catalog(db))
     elif name=='status':
         tasks=db.all('tasks');active=[r for r in db.all('runs') if r.get('status') not in ('completed','failed','cancelled','interrupted','unknown','partial')]
@@ -62,4 +62,4 @@ async def execute(db,runtime,text,channel):
         if not run:raise HTTPException(409,'No active run in this channel.')
         await runtime.stop(run['id']);reply='Stopping at the next safe point.'
     elif name=='brief':return False,(settings.get('morningPrompt') or 'Give my three priorities, what to ignore, what needs input, and the smallest next move. Read only; do not change external services.')
-    db.message(text,channel,'user');db.message(reply,channel);return True,text
+    db.message(text,channel,'user',identity=client_id);db.message(reply,channel);return True,text

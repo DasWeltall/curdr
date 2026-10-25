@@ -4,7 +4,7 @@ export type IconState = "idle" | "think" | "work" | "need" | "success" | "error"
 export interface ChannelWorkspace {
   id: string; name: string; context: string; summary: string; createdAt: string;
 }
-export interface Upload { uri: string; name: string; mimeType?: string; file?: File; channel?: string; }
+export interface Upload { uri: string; name: string; mimeType?: string; file?: File; channel?: string; clientId?:string; }
 export interface VoiceUpload extends Upload { duration: number; peaks?: number[]; }
 export interface Task {
   id: string;
@@ -57,11 +57,11 @@ export type Message = {
   role: "user" | "agent";
   channel?: string;
   createdAt: string;
-  streaming?: boolean; failed?: string; runId?: string;
+  streaming?: boolean; failed?: string; runId?: string; delivery?:"sending"|"failed"|"unknown";
 } & (
   | { kind: "text"; text: string }
   | { kind: "artifact"; fileId: string; title: string; description?: string }
-  | { kind: "audio"; fileId: string; duration: number; peaks?: number[]; transcript?: string; processing?: "transcribing" | "ready" | "failed" }
+  | { kind: "audio"; fileId: string; localUri?:string; duration: number; peaks?: number[]; transcript?: string; processing?: "transcribing" | "ready" | "failed" }
   | { kind: "attachment"; fileIds: string[]; text?: string }
   | { kind: "brief"; items: [string, string][] }
   | {
@@ -148,7 +148,7 @@ export interface Transport {
     onEvent: (event: AgentEvent) => void,
     onStatus: (status: string) => void,
   ) => () => void;
-  message: (text: string, channel?: string, attachments?: string[]) => Promise<void>;
+  message: (text: string, channel?: string, attachments?: string[], clientId?:string) => Promise<void>;
   braindump: (text: string) => Promise<Draft[]>;
   commitDraft: (draft: Draft, start: boolean) => Promise<Task>;
   task: (id: string, action: TaskAction, text?: string) => Promise<void>;

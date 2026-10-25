@@ -81,7 +81,10 @@ class LiveRuntime:
         run=self.db.get('runs',id) or dict(id=id,channel=channel,status='queued',detail='Queued',startedAt=now(),updatedAt=now(),activities=[],taskId=task_id,title=event.get('input_preview') or 'Hermes request')
         sequence=event.get('seq',event.get('_id'))
         if sequence is not None:
-            try:run['lastSeq']=int(sequence)
+            try:
+                sequence=int(sequence)
+                if sequence<=run.get('lastSeq',-1):return
+                run['lastSeq']=sequence
             except (ValueError,TypeError):pass
         if kind=='run.created':self.active_run[channel]=id
         if event.get('session_id'):
@@ -136,6 +139,7 @@ class LiveRuntime:
             run.update(status='unknown',detail='Connection lost · inspect before retrying',error='The execution outcome is unknown. curdr will not resend it automatically.')
         elif kind=='run.snapshot':
             status=event.get('status','running')
+            if run['status'] in TERMINAL and status not in TERMINAL:return
             pending=event.get('pending_controls') or []
             if isinstance(pending,dict):pending=list(pending.values())
             if event.get('approval'):pending=[*pending,event['approval']]
@@ -204,6 +208,7 @@ class LiveRuntime:
         self.resume_task(approval.get('taskId'))
 
     async def ask(self,text,settings,history=None,purpose='chat',skills=None,channel='main',workspace='',task_id=None):
+        settings={**settings,'_cofounder':(self.db.get('skill_sources','curdr-cofounder') or {}).get('content',''),'_chat_style':(self.db.get('skill_sources','curdr-chat') or {}).get('content','')}
         if not self.adapter:return await self.runner.ask(text,settings,history,purpose=purpose,skills=skills,channel=channel,workspace=workspace)
         if not settings['sbx']:raise ValueError('Hermes is paused in Settings.')
         self.partial.pop(channel,None);self.text[channel]='';self.active_run.pop(channel,None)

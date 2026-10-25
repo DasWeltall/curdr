@@ -25,6 +25,7 @@ from .channels import MAIN, channel_id, mentioned_channels, ensure_channel, hist
 class TextBody(BaseModel):
     text: str = Field(default="", max_length=20000)
     attachments: list[str] = Field(default_factory=list, max_length=5)
+    client_id: str | None = Field(default=None,pattern=r'^u-[a-zA-Z0-9_-]{8,90}$')
     channel: str | None = Field(default=None, pattern=r'^[\w-]{1,64}$')
 
 
@@ -50,6 +51,7 @@ def create_app(path=None, runner=None):
     runtime = LiveRuntime(db,runner)
     from .notifications import PushService
     push=PushService(db)
+    stream_epoch=uid()
     jobs: dict[str, asyncio.Task] = {}
     generation: dict[str, int] = {}
     queue = asyncio.Semaphore(1)
@@ -105,7 +107,7 @@ def create_app(path=None, runner=None):
         await asyncio.gather(task,monitor,notifications,*jobs.values(),return_exceptions=True)
         db.conn.close()
 
-    app=FastAPI(title='curdr Gateway',version='0.10.3',lifespan=lifespan)
+    app=FastAPI(title='curdr Gateway',version='0.11.0',lifespan=lifespan)
     app.state.db=db
     from .notifications import register as register_push
     register_push(app,db,auth,push)
@@ -185,7 +187,7 @@ def create_app(path=None, runner=None):
         ready=await runner.health() if runner.mode=='hermes' else False
         info=db.get('meta','hermes') or {}
         tools={name for group in info.get('toolsets',[]) if group.get('enabled') and group.get('configured') for name in group.get('tools',[]) if isinstance(name,str)}
-        return dict(ok=True,agent=runner.mode,connection_type='existing' if getattr(runner,'existing',None) else 'managed',agent_status='ready' if ready else 'unavailable' if runner.mode=='hermes' else 'mock',version='0.10.3',capabilities=dict(chat=ready,planning=ready,memory=ready,skills=ready,visuals=ready,sleep=ready,audio=ready and getattr(runner,'audio_ready',False),channels=ready,terminal=ready and any(name in tools for name in ('terminal','terminal_exec')),browser=ready and 'browser_exec' in tools,connectors=False,streaming=ready and bool(info.get('streaming')),approvals=ready and bool(info.get('approvals'))))
+        return dict(ok=True,agent=runner.mode,connection_type='existing' if getattr(runner,'existing',None) else 'managed',agent_status='ready' if ready else 'unavailable' if runner.mode=='hermes' else 'mock',version='0.11.0',capabilities=dict(chat=ready,planning=ready,memory=ready,skills=ready,visuals=ready,sleep=ready,audio=ready and getattr(runner,'audio_ready',False),channels=ready,terminal=ready and any(name in tools for name in ('terminal','terminal_exec')),browser=ready and 'browser_exec' in tools,connectors=False,streaming=ready and bool(info.get('streaming')),approvals=ready and bool(info.get('approvals'))))
 
     @app.get('/runtime',dependencies=[Depends(auth)])
     async def runtime_info():
@@ -226,11 +228,11 @@ def create_app(path=None, runner=None):
     async def stream(request:Request):
         async def events():
             state,seq=db.snapshot()
-            yield f'id: {seq}\ndata: {json.dumps(dict(type="snapshot",data=state),ensure_ascii=False)}\n\n'
+            yield f'id: {stream_epoch}:{seq}\ndata: {json.dumps(dict(type="snapshot",data=state),ensure_ascii=False)}\n\n'
             keepalive=time.monotonic()
             while not await request.is_disconnected():
                 for n,data in db.events_after(seq):
-                    yield f'id: {n}\ndata: {data}\n\n'
+                    yield f'id: {stream_epoch}:{n}\ndata: {data}\n\n'
                     seq=n
                 if time.monotonic()-keepalive>15:
                     yield ': heartbeat\n\n'
@@ -261,7 +263,7 @@ def create_app(path=None, runner=None):
         db.event('channels',db.all('channels'))
         return db.get('channels',id)
 
-    async def respond(text,channel,attachments=None,add_user=True):
+    async def respond(text,channel,attachments=None,add_user=True,client_id=None,display_text=None):
         channel=channel_id(channel)
         ensure_channel(db,channel)
         settings=db.get('settings','main')
@@ -282,8 +284,8 @@ def create_app(path=None, runner=None):
             else:prompt+='\n'+item.get('content','Binary attachment stored; do not claim to have read its contents.')[:12000]
         if add_user:
             if attachments:
-                db.event('message',dict(id=uid(),role='user',kind='attachment',text=text,fileIds=attachments,channel=channel,createdAt=now()))
-            else: db.message(text,channel,'user')
+                db.event('message',dict(id=client_id or uid(),role='user',kind='attachment',text=display_text if display_text is not None else text,fileIds=attachments,channel=channel,createdAt=now()))
+            else: db.message(display_text if display_text is not None else text,channel,'user',identity=client_id)
         activity(channel,'think')
         try:
             handoffs=[]
@@ -337,30 +339,39 @@ def create_app(path=None, runner=None):
         if db.get('settings','main').get('sleeping'):raise HTTPException(409,'Your assistant is resting. Wake it in Settings to continue.')
         if not body.text.strip() and not body.attachments:
             raise HTTPException(422,'The message is empty.')
+        original=body.text
+        def prior_submission():
+            prior=db.get('messages',body.client_id) if body.client_id else None
+            if prior:
+                if prior.get('role')!='user' or prior.get('text','')!=original or channel_id(prior.get('channel'))!=channel_id(body.channel) or prior.get('fileIds',[])!=body.attachments:raise HTTPException(409,'This message identity was already used for different content.')
+                db.event('message',prior)
+            return prior
         try:
+            if prior_submission():return {'ok':True}
             target=channel_id(body.channel)
             intent=db.get('meta','channel-intent:'+target) or {}
             if intent.get('pending') and not body.text.startswith('/') and not body.attachments:
                 from .channel_creation import create_requested_channel
-                async with queue:await create_requested_channel(db,runtime,body.text,target)
+                async with queue:await create_requested_channel(db,runtime,body.text,target,body.client_id)
                 return {'ok':True}
             if body.text.startswith('/') and not body.attachments:
                 from .commands import execute
-                handled,body.text=await execute(db,runtime,body.text,channel_id(body.channel))
+                handled,body.text=await execute(db,runtime,body.text,channel_id(body.channel),body.client_id)
                 if handled:return {'ok':True}
                 if body.text.startswith('[curdr channel request] '):
                     from .channel_creation import create_requested_channel
-                    async with queue:await create_requested_channel(db,runtime,body.text.removeprefix('[curdr channel request] '),channel_id(body.channel))
+                    async with queue:await create_requested_channel(db,runtime,body.text.removeprefix('[curdr channel request] '),channel_id(body.channel),body.client_id)
                     return {'ok':True}
             async with queue:
-                await respond(body.text,body.channel or MAIN,body.attachments)
+                if prior_submission():return {'ok':True}
+                await respond(body.text,body.channel or MAIN,body.attachments,client_id=body.client_id,display_text=original)
         except HTTPException: raise
         except ValueError as error: raise HTTPException(422,str(error))
         except Exception: raise HTTPException(502,'Agent request failed. Check Hermes, model and budget.')
         return dict(ok=True)
 
     @app.post('/audio',dependencies=[Depends(auth)])
-    async def voice_message(file:UploadFile=File(...),duration:float=Form(...),channel:str=Form('main'),peaks:str=Form('[]')):
+    async def voice_message(file:UploadFile=File(...),duration:float=Form(...),channel:str=Form('main'),peaks:str=Form('[]'),client_id:str|None=Form(None,pattern=r'^u-[a-zA-Z0-9_-]{8,90}$')):
         if db.get('settings','main').get('sleeping'):raise HTTPException(409,'Your assistant is resting. Wake it in Settings to continue.')
         try: channel=channel_id(channel)
         except ValueError as error: raise HTTPException(422,str(error))
@@ -378,8 +389,13 @@ def create_app(path=None, runner=None):
         if not data or len(data)>8*1024*1024:
             raise HTTPException(413,'Voice message must be under 8 MB.')
         item=dict(id=uid(),name='voice-message'+allowed[mime],channel=channel,updatedAt=now(),mime=mime,base64=base64.b64encode(data).decode(),size=len(data))
-        message=dict(id=uid(),role='user',kind='audio',fileId=item['id'],duration=duration,peaks=amplitudes,channel=channel,createdAt=now(),processing='transcribing')
+        message=dict(id=client_id or uid(),role='user',kind='audio',fileId=item['id'],duration=duration,peaks=amplitudes,channel=channel,createdAt=now(),processing='transcribing')
         async with queue:
+            prior=db.get('messages',client_id) if client_id else None
+            if prior:
+                saved=db.get('files',prior.get('fileId','')) or {}
+                if prior.get('kind')!='audio' or prior.get('channel')!=channel or prior.get('duration')!=duration or saved.get('base64')!=item['base64']:raise HTTPException(409,'This recording identity was already used for different content.')
+                db.event('message',prior);return {'ok':True}
             ensure_channel(db,channel)
             db.event('file_added',item);db.event('message',message);activity(channel,'think')
             try:

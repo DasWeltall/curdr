@@ -3,8 +3,8 @@ import json,re
 from fastapi import HTTPException
 from .channels import channel_id,ensure_channel,workspace_context
 
-async def create_requested_channel(db,runtime,brief,channel):
-    db.message(brief,channel,'user')
+async def create_requested_channel(db,runtime,brief,channel,client_id=None):
+    db.message(brief,channel,'user',identity=client_id)
     result=await runtime.ask('The user explicitly requested a new channel. Propose its focused scope from this brief: '+brief+'\nReturn ONLY a JSON object with id (lowercase slug, max 48 chars), name (short display title) and context (specific ownership, goal, boundaries). Do not use tools or change external services. Do not return a visualization. If the brief has no purpose, return {"question":"one focused question"}. Existing channel IDs: '+', '.join(c['id'] for c in db.all('channels')),db.get('settings','main'),purpose='channel',channel=channel,workspace=workspace_context(db,channel))
     raw=result.strip();raw=re.sub(r'^```(?:json)?\s*|\s*```$','',raw)
     try:

@@ -12,8 +12,12 @@ export function reduce(state: Snapshot, event: AgentEvent): Snapshot {
     case "activity": return { ...state, iconState: event.data.state, activityChannel: event.data.channel };
     case "snapshot":
       return { ...event.data, channels: event.data.channels || [] };
-    case "message":
+    case "message": {
+      const previous=state.messages.find(m=>m.id===event.data.id);
+      // A replayed partial must never replace a completed reply or its visual card.
+      if(previous&&event.data.streaming&&(!previous.streaming||previous.kind==='text'&&event.data.kind==='text'&&previous.text.length>event.data.text.length))return state;
       return { ...state, messages: upsert(state.messages, event.data) };
+    }
     case "task_update":
       return { ...state, tasks: upsert(state.tasks, event.data) };
     case "task_removed":

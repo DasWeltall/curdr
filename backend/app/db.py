@@ -65,7 +65,7 @@ class Database:
             return [json.loads(r[0]) for r in self.conn.execute('SELECT data FROM objects WHERE kind=? ORDER BY rowid', (kind,))]
 
     def put(self, kind, id, data):
-        self.conn.execute('INSERT OR REPLACE INTO objects VALUES (?,?,?)', (kind, id, json.dumps(data, ensure_ascii=False)))
+        self.conn.execute('INSERT INTO objects(kind,id,data) VALUES (?,?,?) ON CONFLICT(kind,id) DO UPDATE SET data=excluded.data', (kind, id, json.dumps(data, ensure_ascii=False)))
 
     def event(self, type, data):
         with self.lock:
@@ -101,8 +101,8 @@ class Database:
                 self.conn.execute('ROLLBACK')
                 raise
 
-    def message(self, text, channel='main', role='agent'):
-        m = dict(id=uid(), role=role, kind='text', text=text, channel=channel, createdAt=now())
+    def message(self, text, channel='main', role='agent', *, identity=None):
+        m = dict(id=identity or uid(), role=role, kind='text', text=text, channel=channel, createdAt=now())
         self.event('message', m)
         return m
 
