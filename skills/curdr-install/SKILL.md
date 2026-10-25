@@ -1,7 +1,7 @@
 ---
 name: curdr-install
 description: Install or update the curdr founder workspace beside an existing Hermes, preserving its data and permissions.
-version: 0.10.0
+version: 0.10.2
 license: MIT
 platforms: [linux, macos]
 ---
