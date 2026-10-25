@@ -15,7 +15,7 @@ git clone --depth 1 --branch v0.11.0 https://github.com/DasWeltall/curdr.git /AB
 git -C /ABSOLUTE/NEW/RELEASE rev-parse HEAD
 ```
 
-Require the exact 0.11.0 commit pinned by the canonical agent guide at https://raw.githubusercontent.com/DasWeltall/curdr/main/install.md. Do not use an older release pin. Stop on mismatch. Continue only from this verified checkout. Use GitHub for installation; the marketing CDN can block automated clients.
+Require commit `23418904ffd194b9c6c29dc60f8822b9c7a4a2ef`. Stop on mismatch. Continue only from this verified checkout. Use GitHub for installation; the marketing CDN can block automated clients.
 
 ## 3. Prepare Hermes
 
