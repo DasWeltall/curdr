@@ -1,14 +1,13 @@
 name: Android preview APK
 on:
   workflow_dispatch:
-  push:
-    tags: ['v*']
   release:
     types: [published]
 permissions:
   contents: write
 jobs:
   apk:
+    if: ${{ !startsWith(github.event.release.tag_name, 'gateway-') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

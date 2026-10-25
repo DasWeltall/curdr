@@ -59,7 +59,7 @@ if [[ -n "${CURDR_RELEASE_FILE:-}" ]]; then cp "$CURDR_RELEASE_FILE" "$curdr_tem
 python3 - "$curdr_temp/release.json" > "$curdr_temp/revision" <<'PY'
 import json,re,sys
 value=json.load(open(sys.argv[1]));tag=value['tag'];sha=value['commit']
-assert re.fullmatch(r'v[0-9]+\.[0-9]+\.[0-9]+',tag) and re.fullmatch(r'[a-f0-9]{40}',sha),'Invalid release descriptor'
+assert re.fullmatch(r'(?:gateway-)?v[0-9]+\.[0-9]+\.[0-9]+',tag) and re.fullmatch(r'[a-f0-9]{40}',sha),'Invalid release descriptor'
 print(tag);print(sha)
 PY
 curdr_tag="$(sed -n '1p' "$curdr_temp/revision")"

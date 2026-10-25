@@ -56,19 +56,21 @@ class PushService:
         if not enabled():return
         clock=clock or time.time();db=self.db
         if not awake(db.get('settings','main'),clock):return
+        # Receipts must never block a device's next decision/result notification.
+        receipts=[r for r in db.all('push_receipts') if r.get('next',0)<=clock][:100]
+        if receipts:
+            response=await self.send('/getReceipts',{'ids':[r['id'] for r in receipts]})
+            results=(response or {}).get('data',{})
+            for receipt in receipts:
+                result=results.get(receipt['id']);device=db.get('push_devices',receipt['device'])
+                if result and result.get('details',{}).get('error')=='DeviceNotRegistered' and device and device['token']==receipt['token']:self.remove(device['id'])
+                if result or not device or clock-receipt['created']>86400:db.conn.execute("DELETE FROM objects WHERE kind='push_receipts' AND id=?",(receipt['id'],))
+                else:db.put('push_receipts',receipt['id'],{**receipt,'next':clock+900})
         for device in db.all('push_devices'):
             id=device['id'];pending=db.get('push_outbox',id)
             if clock-device.get('updated',0)>90*86400:self.remove(id);continue
             if device.get('activeUntil',0)>clock:
                 _,seq=db.snapshot();db.put('push_devices',id,{**device,'cursor':seq});db.conn.execute("DELETE FROM objects WHERE kind='push_outbox' AND id=?",(id,));continue
-            if pending and pending.get('ticket'):
-                if pending.get('next',0)>clock:continue
-                result=await self.send('/getReceipts',{'ids':[pending['ticket']]})
-                receipt=(result or {}).get('data',{}).get(pending['ticket'])
-                if receipt and receipt.get('details',{}).get('error')=='DeviceNotRegistered':self.remove(id);continue
-                if receipt or clock-pending['created']>86400:db.conn.execute("DELETE FROM objects WHERE kind='push_outbox' AND id=?",(id,))
-                else:db.put('push_outbox',id,{**pending,'next':clock+900})
-                continue
             if not pending:
                 events=db.events_after(device.get('cursor',0))
                 if not events:continue
@@ -95,7 +97,8 @@ class PushService:
             if ticket.get('details',{}).get('error')=='DeviceNotRegistered':self.remove(id);continue
             if ticket.get('status')=='ok' and ticket.get('id'):
                 db.put('push_devices',id,{**device,'cursor':pending['cursor'],'seen':pending['seen']})
-                db.put('push_outbox',id,{**pending,'ticket':ticket['id'],'next':clock+900})
+                db.put('push_receipts',ticket['id'],{'id':ticket['id'],'device':id,'token':device['token'],'created':clock,'next':clock+900})
+                db.conn.execute("DELETE FROM objects WHERE kind='push_outbox' AND id=?",(id,))
             else:
                 attempts=pending.get('attempts',0)+1
                 db.put('push_outbox',id,{**pending,'attempts':attempts,'next':clock+min(900,15*2**attempts)})

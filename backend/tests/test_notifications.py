@@ -28,7 +28,8 @@ def test_final_only_durable_delivery_and_private_body(db):
             await service.tick();assert len(calls)==1
             assert calls[0][1]['data']=={'channel':'launch','messageId':'m1'}
             assert 'Private' not in json.dumps(calls)
-            assert db.get('push_outbox','phone')['ticket']=='ticket-1'
+            assert db.get('push_outbox','phone') is None
+            assert db.get('push_receipts','ticket-1')['device']=='phone'
             await PushService(db,client).tick();assert len(calls)==1 # restart does not resend accepted ticket
     asyncio.run(scenario())
 
@@ -106,3 +107,20 @@ def test_registration_requires_auth_and_export_never_contains_token(tmp_path,mon
     assert client.post('/notifications/devices/'+device['id']+'/remove',json={}).status_code==200
     assert app.state.db.all('push_devices')==[]
     app.state.db.conn.close()
+
+
+def test_pending_receipt_does_not_delay_new_decision(db):
+    async def scenario():
+        calls=[];clock=time.time()
+        def handle(request):
+            calls.append(json.loads(request.content))
+            return httpx.Response(200,json={'data':{'status':'ok','id':'ticket-'+str(len(calls))}})
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as client:
+            service=PushService(db,client);db.message('First result.')
+            await service.tick(clock)
+            db.event('approval',dict(id='urgent-decision',state='pending',kind='tool',channel='main'))
+            await service.tick(clock+5)
+            assert len(calls)==2
+            assert calls[-1]['data']['approvalId']=='urgent-decision'
+            assert len(db.all('push_receipts'))==2
+    asyncio.run(scenario())
