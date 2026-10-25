@@ -23,6 +23,8 @@ jobs:
       - run: npm ci
       - run: npm run typecheck && npm test
       - uses: android-actions/setup-android@v3
+        with:
+          packages: ''
       - name: Android SDK
         run: sdkmanager 'platforms;android-37.0' 'build-tools;36.0.0' 'build-tools;37.0.0' 'ndk;27.1.12297006' 'cmake;3.22.1'
       - name: Optional Firebase client configuration

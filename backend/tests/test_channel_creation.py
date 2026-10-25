@@ -21,3 +21,16 @@ def test_invalid_agent_output_never_creates_channel(tmp_path,output):
     db=Database(tmp_path/'channels.db')
     with pytest.raises(HTTPException):asyncio.run(create_requested_channel(db,Agent(output),'Research','main'))
     assert db.all('channels')==[];db.conn.close()
+
+
+def test_channel_agent_gets_json_contract_not_visual_instructions():
+    import httpx
+    from app.existing_hermes import ExistingHermes
+    def handle(request):
+        body=json.loads(request.content);instructions=body['messages'][0]['content']
+        assert 'Channel setup: return only' in instructions
+        assert 'Allowed blocks:' not in instructions
+        return httpx.Response(200,json={'choices':[{'message':{'content':'{"question":"Which purpose?"}'},'finish_reason':'stop'}]})
+    agent=ExistingHermes('http://hermes:8642',key='test',transport=httpx.MockTransport(handle))
+    result=asyncio.run(agent.ask('Research',{'sbx':True},purpose='channel'))
+    assert json.loads(result)['question']=='Which purpose?'

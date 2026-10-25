@@ -38,8 +38,8 @@ command -v python3 >/dev/null || { echo 'Activate Hermes or install Python 3.11+
 command -v node >/dev/null || { echo 'Activate Hermes or install Node 24+.' >&2; exit 1; }
 if "$curdr_new_hermes"; then
  echo 'Choose your provider/model in the Hermes setup. Credentials stay on this server.'
- if [[ ! -r /dev/tty ]]; then echo 'Run hermes setup in a terminal, then rerun this installer.' >&2; exit 1; fi
- hermes setup </dev/tty
+ if [[ ! -r /dev/tty ]]; then echo 'Run hermes model in a terminal, then rerun this installer.' >&2; exit 1; fi
+ hermes model </dev/tty
  # Fresh install only: create a private loopback API key, never print it.
  python3 - "$curdr_home" <<'PY'
 from pathlib import Path

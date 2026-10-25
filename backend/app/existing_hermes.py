@@ -60,7 +60,7 @@ class ExistingHermes:
         from .founder import instructions
         system = instructions(settings)+'\n'+language+' Never invent results. Existing Hermes server permissions and approval rules apply.\n'
         system += 'User name: '+(settings.get('name') or 'not provided')+'\n'+workspace+'\n'
-        system += 'Brain dump review: preserve obligations, identify ideas requiring validation, deduplicate and prioritize against the founder goal. Return at most 12 reviewed items as a JSON array with title, sub (why/next step), channel (without #), and kind (task, idea, or note). Recommend only a few immediate actions; do not treat every idea as a commitment.' if purpose=='braindump' else VISUAL
+        system += 'Brain dump review: preserve obligations, identify ideas requiring validation, deduplicate and prioritize against the founder goal. Return at most 12 reviewed items as a JSON array with title, sub (why/next step), channel (without #), and kind (task, idea, or note). Recommend only a few immediate actions; do not treat every idea as a commitment.' if purpose=='braindump' else 'Channel setup: return only the requested JSON proposal or one question as JSON. Do not emit a curdr visualization or take external actions.' if purpose=='channel' else VISUAL
         if on_event is not None:
             return await self.stream_run(text,system,settings,history,channel,on_event,session_id)
         messages = [{'role':'system','content':system}, *(history or []), {'role':'user','content':text}]
