@@ -102,3 +102,5 @@
 - [x] Default compact native cards for plans, priorities, comparisons, progress and what-if inputs.
 - [x] Keep Brain Dump's JSON draft contract separate from visual cards.
 - [ ] Physical-device acceptance with the owner's actual Hermes.
+
+- [x] v0.10.3: browser Demo camera uses the shared real Blob/File resolver.

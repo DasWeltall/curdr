@@ -3,7 +3,7 @@
     "name": "curdr",
     "slug": "curdr",
     "scheme": "curdr",
-    "version": "0.10.2",
+    "version": "0.10.3",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "icon": "./assets/icon.png",
@@ -17,7 +17,7 @@
         "RECORD_AUDIO"
       ],
       "softwareKeyboardLayoutMode": "resize",
-      "versionCode": 12
+      "versionCode": 13
     },
     "web": {
       "bundler": "metro",

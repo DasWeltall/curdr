@@ -105,7 +105,7 @@ def create_app(path=None, runner=None):
         await asyncio.gather(task,monitor,notifications,*jobs.values(),return_exceptions=True)
         db.conn.close()
 
-    app=FastAPI(title='curdr Gateway',version='0.10.2',lifespan=lifespan)
+    app=FastAPI(title='curdr Gateway',version='0.10.3',lifespan=lifespan)
     app.state.db=db
     from .notifications import register as register_push
     register_push(app,db,auth,push)
@@ -185,7 +185,7 @@ def create_app(path=None, runner=None):
         ready=await runner.health() if runner.mode=='hermes' else False
         info=db.get('meta','hermes') or {}
         tools={name for group in info.get('toolsets',[]) if group.get('enabled') and group.get('configured') for name in group.get('tools',[]) if isinstance(name,str)}
-        return dict(ok=True,agent=runner.mode,connection_type='existing' if getattr(runner,'existing',None) else 'managed',agent_status='ready' if ready else 'unavailable' if runner.mode=='hermes' else 'mock',version='0.10.2',capabilities=dict(chat=ready,planning=ready,memory=ready,skills=ready,visuals=ready,sleep=ready,audio=ready and getattr(runner,'audio_ready',False),channels=ready,terminal=ready and any(name in tools for name in ('terminal','terminal_exec')),browser=ready and 'browser_exec' in tools,connectors=False,streaming=ready and bool(info.get('streaming')),approvals=ready and bool(info.get('approvals'))))
+        return dict(ok=True,agent=runner.mode,connection_type='existing' if getattr(runner,'existing',None) else 'managed',agent_status='ready' if ready else 'unavailable' if runner.mode=='hermes' else 'mock',version='0.10.3',capabilities=dict(chat=ready,planning=ready,memory=ready,skills=ready,visuals=ready,sleep=ready,audio=ready and getattr(runner,'audio_ready',False),channels=ready,terminal=ready and any(name in tools for name in ('terminal','terminal_exec')),browser=ready and 'browser_exec' in tools,connectors=False,streaming=ready and bool(info.get('streaming')),approvals=ready and bool(info.get('approvals'))))
 
     @app.get('/runtime',dependencies=[Depends(auth)])
     async def runtime_info():

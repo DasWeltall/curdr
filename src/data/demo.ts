@@ -1,3 +1,5 @@
+import {Platform} from 'react-native';
+import {readUploadFile} from './uploadFile';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LocalTransport } from './local';
 import { AgentEvent, Draft, OutputFile, Settings, Task, TaskAction, Upload, VoiceUpload, uid } from './types';
@@ -102,7 +104,8 @@ export class DemoTransport extends LocalTransport {
   }
   override async upload(file: Upload): Promise<OutputFile> {
     let base64='';
-    if(file.file) base64=await new Promise<string>((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]||'');reader.onerror=reject;reader.readAsDataURL(file.file!);});
+    const blob=Platform.OS==='web'?await readUploadFile(file):file.file;
+    if(blob) base64=await new Promise<string>((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]||'');reader.onerror=reject;reader.readAsDataURL(blob);});
     else base64=await new DeviceFile(file.uri).base64();
     const result: OutputFile={id:uid(),name:file.name,channel:file.channel||'main',mime:file.mimeType||'application/octet-stream',base64,updatedAt:new Date().toISOString()};
     this.emit({type:'file_added',data:result}); return result;

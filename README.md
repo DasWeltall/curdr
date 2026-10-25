@@ -10,7 +10,7 @@ Say everything on your mind. Review a smaller plan, park distractions and start 
 
 ## Install
 
-**Upgrading from 0.9/0.10?** Install the **0.10.2 Android APK** as well as updating the gateway. The native media-upload fix is in the client; a server update alone cannot fix the old APK. Your saved server data stays in the same data directory.
+**Upgrading from 0.9/0.10?** Install the **0.10.3 Android APK** as well as updating the gateway. The native media-upload fix is in the client; a server update alone cannot fix the old APK. Your saved server data stays in the same data directory.
 
 **Already have Hermes?** Send it this:
 

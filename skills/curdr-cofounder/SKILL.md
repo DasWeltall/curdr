@@ -1,7 +1,7 @@
 ---
 name: curdr-cofounder
 description: A candid, quiet AI co-founder for solo founders. Capture, decide, execute and check in with evidence.
-version: 0.10.2
+version: 0.10.3
 license: MIT
 ---
 
