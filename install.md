@@ -15,7 +15,7 @@ git clone --depth 1 --branch v0.12.0 https://github.com/DasWeltall/curdr.git /AB
 git -C /ABSOLUTE/NEW/RELEASE rev-parse HEAD
 ```
 
-Require the exact 0.12.0 commit pinned by the canonical main-branch install.md. Do not reuse an earlier release pin. Stop on mismatch. Continue only from this verified checkout. Use GitHub for installation; the marketing CDN can block automated clients.
+Require commit `5ad7e32a90992bc12836172cbd80d61d3994490c`. Stop on mismatch. Continue only from this verified checkout. Use GitHub for installation; the marketing CDN can block automated clients.
 
 ## 3. Prepare Hermes
 
