@@ -33,3 +33,6 @@ public/downloads/
 # Private notification provider configuration
 google-services.json
 *firebase-adminsdk*.json
+
+# Python wheel build output
+backend/build/
