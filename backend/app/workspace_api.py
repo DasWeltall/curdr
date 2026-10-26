@@ -15,7 +15,9 @@ def register(app,db,runtime,runner,auth,queue):
     async def remote(path,method='GET',body=None):
         if not runtime.adapter:raise HTTPException(409,'Connect an existing Hermes API first.')
         try:return await runtime.adapter.request(path,method,body)
-        except httpx.HTTPStatusError as e:raise HTTPException(e.response.status_code if e.response.status_code in (400,404,409,422) else 502,'Hermes rejected this operation. Check its version and the supplied fields.')
+        except httpx.HTTPStatusError as e:
+            from .errors import upstream_http_error
+            raise upstream_http_error(e)
         except (ValueError,httpx.HTTPError):raise HTTPException(502,'Could not reach Hermes.')
 
     def setting(patch):
@@ -29,7 +31,7 @@ def register(app,db,runtime,runner,auth,queue):
     @app.get('/routines',dependencies=[Depends(auth)])
     async def routines():
         jobs=(db.get('meta','hermes') or {}).get('jobs',[])
-        return local_routines()+[{**j,'enabled':j.get('enabled',not j.get('paused',False)),'id':'hermes-'+str(j['id']),'remoteId':str(j['id']),'kind':'hermes'} for j in jobs]
+        return local_routines()+[{**j,'enabled':j.get('enabled',not j.get('paused',False)),'id':'hermes-'+str(j['id']),'remoteId':str(j['id']),'kind':'hermes'} for j in (jobs if isinstance(jobs,list) else []) if isinstance(j,dict) and isinstance(j.get('id'),(str,int))]
 
     @app.get('/routines/{id}',dependencies=[Depends(auth)])
     async def routine(id:str):

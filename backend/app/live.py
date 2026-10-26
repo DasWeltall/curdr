@@ -41,9 +41,11 @@ class LiveRuntime:
             self.db.event('hermes',info)
             self.scan_files()
             return info
-        except (httpx.HTTPError,ValueError,OSError):
+        except (httpx.HTTPError,ValueError,OSError) as error:
+            from .errors import upstream_http_error,public_text
+            diagnostic=upstream_http_error(error).detail if isinstance(error,httpx.HTTPStatusError) else {'code':'hermes_unreachable','message':public_text(str(error)) or 'Could not refresh Hermes.'}
             old=self.db.get('meta','hermes') or {}
-            info={**old,'connected':False,'error':'Could not refresh Hermes. Check its API and gateway connection.'}
+            info={**old,'connected':False,'error':diagnostic['message']+' ('+diagnostic['code']+')'}
             self.db.event('hermes',info);return info
 
     def scan_files(self,channel='main'):
@@ -222,13 +224,16 @@ class LiveRuntime:
             output=await self.adapter.ask(text,settings,None if session else history,purpose,skills,channel,workspace,on_event=callback,session_id=session.get('id') if session else None)
             self.flush(channel,complete=True);return output
         except BaseException as error:
-            self.flush(channel,failed='Interrupted' if isinstance(error,asyncio.CancelledError) else safe_text(error),complete=True)
+            from .errors import upstream_http_error
+            diagnostic=upstream_http_error(error).detail if isinstance(error,httpx.HTTPStatusError) else None
+            failure=diagnostic['message']+' ('+diagnostic['code']+')' if diagnostic else safe_text(error)
+            self.flush(channel,failed='Interrupted' if isinstance(error,asyncio.CancelledError) else failure,complete=True)
             recent=[r for r in self.db.all('runs') if r['channel']==channel and r['status'] not in TERMINAL]
             if recent:
                 current=recent[-1]
                 if isinstance(error,asyncio.CancelledError):
                     if not self.closing:self.watchers[current['id']]=asyncio.create_task(self.recover(current))
-                else:self.db.event('run',{**current,'status':'failed','detail':'Run failed','error':safe_text(error),'updatedAt':now()})
+                else:self.db.event('run',{**current,'status':'failed','detail':'Run failed','error':failure,**({'errorCode':diagnostic['code'],'httpStatus':diagnostic['status']} if diagnostic else {}),'updatedAt':now()})
             raise
 
     def finish(self,response,channel,artifact=None,run_id=None):

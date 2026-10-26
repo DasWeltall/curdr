@@ -97,9 +97,16 @@ class ExistingHermes:
 
     async def discover(self):
         if not await self.health():raise ValueError("Hermes is unavailable.")
+        discovery_errors={}
         async def optional(path,default):
             try:return await self.request(path)
-            except (httpx.HTTPError,ValueError):return default
+            except httpx.HTTPStatusError as error:
+                from .errors import upstream_http_error
+                discovery_errors[path.split('?')[0]]=upstream_http_error(error).detail
+                return default
+            except (httpx.HTTPError,ValueError):
+                discovery_errors[path.split('?')[0]]={'code':'hermes_unreachable','message':'Could not read this Hermes endpoint.'}
+                return default
         caps,skills,tools,options,jobs=await asyncio.gather(optional('/v1/capabilities',{}),optional('/v1/skills',{}),optional('/v1/toolsets',{}),optional('/api/model/options?include_unconfigured=false',{}),optional('/api/jobs?include_disabled=true',{}))
         self.capabilities=caps
         def rows(value,key='data'):
@@ -113,7 +120,7 @@ class ExistingHermes:
                 name=model if isinstance(model,str) else (model.get('id') or model.get('model') or '') if isinstance(model,dict) else ''
                 if isinstance(name,str) and name and isinstance(slug,str) and slug:models.append({'model':name,'provider':slug})
         features=caps.get('features',{})
-        return dict(connected=True,streaming=bool(features.get('run_events_sse') or features.get('chat_completions_streaming')),approvals=bool(features.get('run_approval_response') or features.get('run_approval')),model=options.get('model',self.model),provider=options.get('provider',''),models=models[:250],toolsets=rows(tools),jobs=rows(jobs,'jobs'),skills=rows(skills))
+        return dict(connected=True,streaming=bool(features.get('run_events_sse') or features.get('chat_completions_streaming')),approvals=bool(features.get('run_approval_response') or features.get('run_approval')),model=options.get('model',self.model),provider=options.get('provider',''),models=models[:250],discoveryErrors=discovery_errors,toolsets=rows(tools),jobs=rows(jobs,'jobs'),skills=rows(skills))
 
     async def stream_run(self,text,system,settings,history,channel,on_event,session_id):
         if not self.capabilities.get('features',{}).get('run_submission'):
@@ -189,6 +196,10 @@ class ExistingHermes:
                     return output+('\n\nThis result is partial: Hermes reached its turn limit.' if event.get('partial') else '')
                 if status in ('failed','cancelled','interrupted','unknown') or kind=='transport.failed':
                     reason='Hermes lost track of this execution. Inspect it before retrying.' if status=='unknown' or kind=='transport.failed' else 'Hermes '+status+' this run.'
+                    from .errors import public_text
+                    data=event.get('data')
+                    error=event.get('error') or (data.get('error') if isinstance(data,dict) else None)
+                    if isinstance(error,dict):reason=public_text(error.get('message') or reason)+' ('+public_text(error.get('code') or error.get('type') or status,100)+')'
                     raise ValueError(reason)
         finally:
             for worker in workers:worker.cancel()
@@ -207,6 +218,10 @@ class ExistingHermes:
                     result=json.loads(await response.aread());choice=result['choices'][0];finish=choice.get('finish_reason');chunks=[choice.get('message',{}).get('content','')]
                 else:
                     async for event in events(response.aiter_lines()):
+                        if isinstance(event.get('error'),dict):
+                            from .errors import public_text
+                            failure=event['error']
+                            raise ValueError(public_text(failure.get('message') or 'Hermes rejected this request.')+' ('+public_text(failure.get('code') or failure.get('type') or 'hermes_stream_error',100)+')')
                         if event.get('event')=='hermes.tool.progress':
                             await on_event({**event,'event':'tool.started','run_id':run_id,'tool':event.get('tool_name',event.get('tool','Tool'))});continue
                         choices=event.get('choices') or []

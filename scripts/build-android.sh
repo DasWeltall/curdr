@@ -23,7 +23,7 @@ python3 scripts/check-android-permissions.py android/app/src/main/AndroidManifes
 # Release bundle runs without Metro. The preview uses Expo's development signing key.
 (cd android && ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a --no-daemon --max-workers=2)
 mkdir -p artifacts
-cp android/app/build/outputs/apk/release/app-release.apk artifacts/curdr-${curdr_version}-preview-arm64.apk
-"$ANDROID_HOME/build-tools/37.0.0/apksigner" verify artifacts/curdr-${curdr_version}-preview-arm64.apk
-"$ANDROID_HOME/build-tools/37.0.0/aapt" dump permissions artifacts/curdr-${curdr_version}-preview-arm64.apk | python3 scripts/check-android-permissions.py --apk
-sha256sum artifacts/curdr-${curdr_version}-preview-arm64.apk
+cp android/app/build/outputs/apk/release/app-release.apk artifacts/curdr-${curdr_version}-android-arm64.apk
+"$ANDROID_HOME/build-tools/37.0.0/apksigner" verify artifacts/curdr-${curdr_version}-android-arm64.apk
+"$ANDROID_HOME/build-tools/37.0.0/aapt" dump permissions artifacts/curdr-${curdr_version}-android-arm64.apk | python3 scripts/check-android-permissions.py --apk
+sha256sum artifacts/curdr-${curdr_version}-android-arm64.apk

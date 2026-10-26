@@ -28,7 +28,12 @@ async def execute(db,runtime,text,channel,client_id=None):
     if name=='cancel':
         db.put('meta','channel-intent:'+channel,{'pending':False});db.message('Channel request cancelled.',channel);return True,text
     if name not in {n for n,_ in BUILTINS}:raise HTTPException(422,'This command is not exposed by the Hermes API. Use /help for supported curdr commands; terminal-only commands must run on the host.')
+    if name in ('models','model','tools','skills') and runtime.adapter:
+        await runtime.refresh()
     settings=db.get('settings','main');info=db.get('meta','hermes') or {};reply=''
+    endpoint={'models':'/api/model/options','model':'/api/model/options','tools':'/v1/toolsets','skills':'/v1/skills'}.get(name)
+    failure=info.get('discoveryErrors',{}).get(endpoint)
+    if failure:raise HTTPException(502,{'code':failure.get('code','hermes_endpoint_unavailable'),'message':failure.get('message','Hermes could not provide this inventory.'),'source':'hermes'})
     if name=='channel':
         db.put('meta','channel-intent:'+channel,{'pending':True})
         if arg.strip():return False,'[curdr channel request] '+arg
@@ -37,14 +42,14 @@ async def execute(db,runtime,text,channel,client_id=None):
     elif name=='status':
         tasks=db.all('tasks');active=[r for r in db.all('runs') if r.get('status') not in ('completed','failed','cancelled','interrupted','unknown','partial')]
         reply=f"{len(active)} active runs. {sum(t['status']=='need' for t in tasks)} tasks need input; {sum(t['status']=='review' for t in tasks)} ready for review."
-    elif name=='models':reply='\n'.join(m['provider']+'/'+m['model'] for m in info.get('models',[])) or 'No configured models reported. Refresh Runtime.'
+    elif name=='models':reply='\n'.join(m['provider']+'/'+m['model'] for m in info.get('models',[])) or ('Hermes reports the active model as '+str(info.get('model'))+'. Its model picker returned no selectable models.' if info.get('model') else 'Hermes returned an empty model inventory.')
     elif name=='model':
         if not arg:reply='Current: '+(settings.get('hermesModel') or info.get('model') or 'Hermes default')+'. Use /model provider/model.'
         else:
             selected=next((m for m in info.get('models',[]) if arg==m['provider']+'/'+m['model']),None)
             if not selected:raise HTTPException(422,'Choose an exact provider/model from /models.')
             db.event('settings',{**settings,'hermesProvider':selected['provider'],'hermesModel':selected['model']});reply='Model for curdr updated to '+arg+'.'
-    elif name=='tools':reply='\n'.join(g['name']+': '+', '.join(g.get('tools',[])) for g in info.get('toolsets',[])) or 'No tools reported. Refresh Runtime.'
+    elif name=='tools':reply='\n'.join(g['name']+': '+', '.join(t if isinstance(t,str) else str(t.get('name','Tool')) for t in g.get('tools',[]) if isinstance(t,(str,dict))) for g in info.get('toolsets',[])) or 'No tools reported. Refresh Runtime.'
     elif name=='skills':reply='\n'.join(s['title'] for s in db.all('skills')) or 'No Hermes skills reported. Open Computer → Skills.'
     elif name=='memory':reply='\n'.join(m['text'] for m in db.all('founder_memory') if m.get('scope') in ('shared',channel)) or 'No retained founder facts. Use /remember or the founder profile.'
     elif name=='remember':

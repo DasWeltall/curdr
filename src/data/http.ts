@@ -44,11 +44,11 @@ export class HttpTransport implements Transport {
       const error = await res
         .json()
         .catch(() => ({ detail: "Server unavailable." }));
-      throw Error(
-        typeof error.detail === "string"
-          ? error.detail
-          : `Gateway: ${res.status}`,
-      );
+      const detail=error.detail;
+      const message=typeof detail==='string'?detail:typeof detail?.message==='string'?detail.message:'Gateway request failed.';
+      const code=typeof detail?.code==='string'?detail.code:`HTTP ${res.status}`;
+      const failure=Object.assign(new Error(`${message} (${code})`),{status:res.status,code,retryAfter:res.headers.get('Retry-After')});
+      throw failure;
     }
     return res.status === 204 ? undefined : await res.json();
     } finally { clearTimeout(timeout); }

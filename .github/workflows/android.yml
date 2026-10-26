@@ -1,4 +1,4 @@
-name: Android preview APK
+name: Android APK
 on:
   workflow_dispatch:
   release:
@@ -39,10 +39,10 @@ jobs:
       - run: npm run build:apk
       - uses: actions/upload-artifact@v4
         with:
-          name: curdr-android-preview
+          name: curdr-android
           path: artifacts/*.apk
           retention-days: 30
-      - name: Attach Android preview to release
+      - name: Attach Android APK to release
         if: github.event_name == 'release'
         env:
           GH_TOKEN: ${{ github.token }}

@@ -85,3 +85,14 @@ def test_new_routes_require_authentication(owner):
     client,app,_=owner
     for path in ('/routines','/commands','/founder/memory','/workspace','/library/skills','/captures'):
         assert client.get(path,headers={'Authorization':'Bearer wrong'}).status_code==401
+
+def test_routine_list_ignores_malformed_remote_job_entries(owner):
+    client,app,_=owner
+    app.state.db.put('meta','hermes',{'jobs':[None,{},'bad',{'id':'brief','name':'Brief','schedule':{'kind':'cron','expr':'0 8 * * *'}}]})
+    response=client.get('/routines')
+    assert response.status_code==200
+    jobs=[job for job in response.json() if job['kind']=='hermes']
+    assert len(jobs)==1 and jobs[0]['id']=='hermes-brief'
+    assert jobs[0]['schedule']=={'kind':'cron','expr':'0 8 * * *'}
+    app.state.db.put('meta','hermes',{'jobs':{'unexpected':True}})
+    assert len(client.get('/routines').json())==2
