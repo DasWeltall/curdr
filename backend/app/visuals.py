@@ -60,19 +60,34 @@ class Calculator(Strict):
 class Note(Strict):
     type:Literal['text']
     text:str=Field(max_length=1500)
-Block=Annotated[Union[Metrics,Chart,Table,Checklist,Calculator,Note],Field(discriminator='type')]
+class Progress(Strict):
+    type:Literal['progress']
+    label:str=Field(min_length=1,max_length=80)
+    value:float=Field(ge=0)
+    total:float=Field(gt=0,le=1e12)
+    unit:str=Field(default='',max_length=15)
+    @model_validator(mode='after')
+    def bounds(self):
+        if self.value>self.total:raise ValueError('Progress exceeds total.')
+        return self
+Block=Annotated[Union[Metrics,Chart,Table,Checklist,Calculator,Note,Progress],Field(discriminator='type')]
 class Visual(Strict):
     title:str=Field(min_length=1,max_length=80)
     description:str=Field(default='',max_length=240)
     blocks:list[Block]=Field(min_length=1,max_length=8)
 
 def extract_visual(response):
-    match=re.search(r'```curdr\s*\n([\s\S]*?)```',response)
-    if not match or len(match[1])>65536:return response,None
-    try: visual=Visual.model_validate_json(match[1])
-    except ValueError:return response,None
-    text=(response[:match.start()]+response[match.end():]).strip()
-    return text,visual.model_dump()
+    # Accept correctly validated visual JSON even when Hermes labels its fence json.
+    for match in re.finditer(r'```(?:curdr|json)\s*\n([\s\S]*?)```',response,re.IGNORECASE):
+        if len(match[1])>65536:continue
+        try: visual=Visual.model_validate_json(match[1])
+        except ValueError:continue
+        return (response[:match.start()]+response[match.end():]).strip(),visual.model_dump()
+    if len(response)<=65536 and response.strip().startswith('{'):
+        try:return '',Visual.model_validate_json(response).model_dump()
+        except ValueError:pass
+    return response,None
+
 
 def store_response(db,response,channel,message_id=None):
     from .db import now,uid

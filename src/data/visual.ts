@@ -4,6 +4,7 @@ export type VisualBlock=
  |{type:'table';columns:string[];rows:(string|number)[][]}
  |{type:'checklist';items:{text:string;done:boolean}[]}
  |{type:'calculator';label:string;min:number;max:number;step:number;value:number;multiplier:number;offset:number;resultLabel:string;unit:string}
+ |{type:'progress';label:string;value:number;total:number;unit:string}
  |{type:'text';text:string};
 export interface Visual{title:string;description:string;blocks:VisualBlock[];}
 const text=(v:unknown,max=1500)=>typeof v==='string'&&v.length<=max;
@@ -17,6 +18,7 @@ export function parseVisual(content?:string):Visual|null{
   else if(b.type==='table'){if(!Array.isArray(b.columns)||!b.columns.length||b.columns.length>6||b.columns.some((x:unknown)=>!text(x,100))||!Array.isArray(b.rows)||b.rows.length>30||b.rows.some((r:any)=>!Array.isArray(r)||r.length!==b.columns.length||r.some((x:unknown)=>!(text(x)||finite(x)))))return null;}
   else if(b.type==='checklist'){if(!Array.isArray(b.items)||!b.items.length||b.items.length>20||b.items.some((i:any)=>!text(i.text,160)||typeof i.done!=='boolean'))return null;}
   else if(b.type==='calculator'){if(![b.min,b.max,b.step,b.value,b.multiplier,b.offset].every(finite)||b.max<=b.min||b.step<=0||b.value<b.min||b.value>b.max||!text(b.label,80)||!text(b.resultLabel,80)||!text(b.unit,15))return null;}
+  else if(b.type==='progress'){if(!text(b.label,80)||!finite(b.value)||!finite(b.total)||b.total<=0||b.total>1e12||b.value<0||b.value>b.total||!text(b.unit||'',15))return null;}
   else if(b.type==='text'){if(!text(b.text))return null;}else return null;
  }return v;}catch{return null;}
 }

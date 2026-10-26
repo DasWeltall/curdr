@@ -50,3 +50,8 @@ test('Markdown tables terminate, preserve later paragraphs and paginate escaped 
  assert.equal(isLongReply(huge,'agent'),true);
  assert.ok(markdownBlocks('| A | B |\n| --').length>0);
 });
+
+test('slash command suggestions never enlarge the composer',()=>{
+ for(const text of ['/','/help','/reality-check'])assert.equal(inputHeight(text,120),24);
+ assert.equal(composerHeight(inputHeight('/',120),false,0),56);
+});

@@ -10,7 +10,7 @@ Say everything on your mind. Review a smaller plan, park distractions and start 
 
 ## Install
 
-**Upgrading from 0.9/0.10?** Install the **0.11.0 Android APK** as well as updating the gateway. The native media-upload fix is in the client; a server update alone cannot fix the old APK. Your saved server data stays in the same data directory.
+**Upgrading from 0.9/0.10?** Install the **0.12.0 Android APK** as well as updating the gateway. The native media-upload fix is in the client; a server update alone cannot fix the old APK. Your saved server data stays in the same data directory.
 
 **Already have Hermes?** Send it this:
 
@@ -67,3 +67,7 @@ Start with [CONTRIBUTING.md](CONTRIBUTING.md) or report the exact step where set
 [Connection details](docs/CONNECT-HERMES.md) · [Self-hosting](docs/SELF-HOST.md) · [Website architecture](docs/WEBSITE.md) · [Security](SECURITY.md) · [MIT license](LICENSE)
 
 Avatar Studio components retain their original MIT attribution in [third_party/avatar-studio/LICENSE](third_party/avatar-studio/LICENSE).
+
+## Update an existing host install
+
+Give Hermes the [agent guide](https://raw.githubusercontent.com/DasWeltall/curdr/main/install.md), or run `bash scripts/update.sh --data /absolute/curdr/data` from your trusted checkout. It prepares and backs up the pinned update. Switch your existing service to the printed executable, then restart curdr. Your web interface is served by that gateway; phones and computers can use it without the Android app. Existing Docker installs should update their existing image and volumes instead.

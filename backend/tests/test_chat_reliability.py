@@ -60,3 +60,17 @@ def test_voice_retry_keeps_one_recording_and_one_agent_run(tmp_path,monkeypatch)
   voices=[m for m in snap['messages'] if m['kind']=='audio']
   assert len(voices)==1 and voices[0]['id']==data['client_id'] and voices[0]['transcript']=='Prepare launch.'
   assert client.post('/audio',data=data,files={'file':('voice.m4a',b'different-bytes','audio/mp4')}).status_code==409
+
+def test_bundled_attention_contract_survives_legacy_style_overrides():
+ text=instructions({'_chat_style':'Write long enthusiastic updates.'})
+ assert 'Delivery contract' in text and 'U+2013' in text and '[SILENT]' in text
+ assert 'Write long enthusiastic updates.' in text
+
+def test_json_fenced_and_raw_visuals_use_native_rendering():
+ from app.visuals import extract_visual
+ visual={'title':'Release','blocks':[{'type':'progress','label':'Verified tasks','value':2,'total':5}]}
+ for raw in [json.dumps(visual),'```json\n'+json.dumps(visual)+'\n```']:
+  text,result=extract_visual(raw)
+  assert text=='' and result['blocks'][0]['type']=='progress'
+ assert extract_visual('```json\n{"ordinary":"document"}\n```')[1] is None
+ assert extract_visual(json.dumps({'title':'Bad','blocks':[{'type':'progress','label':'X','value':8,'total':5}]}))[1] is None

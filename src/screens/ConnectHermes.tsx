@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import { Platform, Pressable, View } from 'react-native';
 import { useStore } from '../data/store';
 import { gatewayAddress } from '../data/gateway';
@@ -13,6 +13,7 @@ export function ConnectHermes({ onClose, onConnected }: { onClose: () => void; o
   const [step, setStep] = useState(0), [url, setUrl] = useState(gatewayUrl), [secret, setSecret] = useState(''), [token, setToken] = useState('');
   const [advanced, setAdvanced] = useState(false), [help, setHelp] = useState(false), [busy, setBusy] = useState(false), [error, setError] = useState('');
   const [remote, setRemote] = useState<Settings | null>(null), [profile, setProfile] = useState<'local' | 'remote'>('local'), [voiceReady, setVoiceReady] = useState(false);
+  useEffect(()=>{if(Platform.OS!=='web'||gatewayUrl)return;let active=true;const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),5000);void fetch(window.location.origin+'/health',{signal:controller.signal}).then(r=>r.ok?r.json():null).then(health=>{if(active&&health?.ok===true&&typeof health.version==='string'&&health.capabilities)setUrl(previous=>previous||window.location.origin);}).catch(()=>{}).finally(()=>clearTimeout(timer));return()=>{active=false;clearTimeout(timer);controller.abort();};},[gatewayUrl]);
   async function run(action: () => Promise<void>) { setBusy(true); setError(''); try { await action(); } catch (e) { setError(e instanceof Error ? e.message : 'Could not connect.'); } finally { setBusy(false); } }
   async function find() {
     const address = gatewayAddress(url, Platform.OS !== 'web');

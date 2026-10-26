@@ -92,7 +92,7 @@ def main():
             from .existing_hermes import ExistingHermes
             agent=ExistingHermes(config['hermes_url'],key=(root/'hermes-api-key').read_text().strip())
             ready=asyncio.run(agent.health())
-            print(json.dumps(dict(version=version('curdr-gateway'),hermes_ready=ready,web_ready=(Path(config.get('web_dir','/app/web'))/'index.html').is_file(),voice_ready=bool(shutil.which('ffmpeg') and (root/'speech').is_dir()))))
+            print(json.dumps(dict(version=version('curdr-gateway'),hermes_ready=ready,guidelines_ready=all((Path(__file__).parent/'prompts'/name).is_file() for name in ('chat.md','cofounder.md')),web_ready=(Path(config.get('web_dir','/app/web'))/'index.html').is_file(),voice_ready=bool(shutil.which('ffmpeg') and (root/'speech').is_dir()))))
             if not ready:sys.exit(1)
             return
         if args.command=='voice-setup':

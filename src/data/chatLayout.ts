@@ -1,7 +1,7 @@
 export const LINE_HEIGHT=24;
 export const MAX_INPUT_HEIGHT=LINE_HEIGHT*5;
 export function inputHeight(text:string,measured:number){
- if(!text)return LINE_HEIGHT;
+ if(!text||/^\/[\w-]*$/.test(text))return LINE_HEIGHT;
  return Math.max(LINE_HEIGHT,Math.min(MAX_INPUT_HEIGHT,Math.ceil((Number.isFinite(measured)?measured:LINE_HEIGHT)/LINE_HEIGHT)*LINE_HEIGHT));
 }
 export function composerHeight(textHeight:number,voice:boolean,attachments:number){return (attachments?52:0)+(voice?56:Math.max(56,Math.min(MAX_INPUT_HEIGHT,textHeight)+16));}

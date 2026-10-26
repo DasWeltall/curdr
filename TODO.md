@@ -106,3 +106,5 @@
 - [x] v0.10.3: browser Demo camera uses the shared real Blob/File resolver.
 
 - [x] v0.11.0: durable acknowledged outbox, stable transcript order, flat voice composer, finite tables, compact real activity and isolated curdr-chat policy.
+- [x] 0.12: table emphasis, inline expanded answers, fixed slash composer, staged Brain Dump with single-card review, persisted bundled attention contract, robust visual JSON rendering and progress cards.
+- [x] Host update preparation with verified release pin, private backup, preserved speech support and explicit service switch.

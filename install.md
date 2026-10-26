@@ -1,4 +1,4 @@
-# Install curdr · agent guide · App/Gateway 0.11.0
+# Install curdr · agent guide · App/Gateway 0.12.0
 
 Use only when the owner asks to install/update curdr. Work quietly, use minimal tokens, and report the result. No paid model tests, full-repository reading, Android builds, public-port changes or global personality edits. Keep existing routines disabled/enabled as they are.
 
@@ -11,11 +11,11 @@ Find the active Hermes profile and any curdr service, release, Python environmen
 Clone into a real, unused absolute release directory:
 
 ```bash
-git clone --depth 1 --branch v0.11.0 https://github.com/DasWeltall/curdr.git /ABSOLUTE/NEW/RELEASE
+git clone --depth 1 --branch v0.12.0 https://github.com/DasWeltall/curdr.git /ABSOLUTE/NEW/RELEASE
 git -C /ABSOLUTE/NEW/RELEASE rev-parse HEAD
 ```
 
-Require commit `23418904ffd194b9c6c29dc60f8822b9c7a4a2ef`. Stop on mismatch. Continue only from this verified checkout. Use GitHub for installation; the marketing CDN can block automated clients.
+Require the exact 0.12.0 commit pinned by the canonical main-branch install.md. Do not reuse an earlier release pin. Stop on mismatch. Continue only from this verified checkout. Use GitHub for installation; the marketing CDN can block automated clients.
 
 ## 3. Prepare Hermes
 
@@ -37,9 +37,9 @@ First install: add `--hermes-env /ABSOLUTE/ACTIVE/HERMES/.env` and the actual `-
 
 ## 5. Serve, pair, report
 
-The installer prepares a release; it does not switch/restart an existing service. Verify that its executable/Python environment and `web_dir` refer to the new release, restart it with the same data path, then check the live authenticated `/health` reports `0.11.0`. For an existing Docker deployment, update its actual image/service while preserving volumes and configuration; do not accidentally run a parallel host installation.
+The installer prepares a release; it does not switch/restart an existing service. Verify that its executable/Python environment and `web_dir` refer to the new release, restart it with the same data path, then check the live authenticated `/health` reports `0.12.0`. For an existing Docker deployment, update its actual image/service while preserving volumes and configuration; do not accidentally run a parallel host installation.
 
-The native media-upload repair is client-side. Tell Android users to install the 0.11.0 APK; a gateway-only update cannot fix the old APK. Web/PWA users should reopen/reload after deployment. For reliable message acknowledgements, stable ordering and the isolated chat skill, update the gateway too. Keep any owner-edited co-founder skill intact; review it if it explicitly tells the agent to avoid visualizations.
+The native media-upload repair is client-side. Tell Android users to install the 0.12.0 APK; a gateway-only update cannot fix the old APK. Web/PWA users should reopen/reload after deployment. For reliable message acknowledgements, stable ordering and the isolated chat skill, update the gateway too. Keep any owner-edited co-founder skill intact; review it if it explicitly tells the agent to avoid visualizations.
 
 
 Start/restart the existing curdr service with this release's `.venv-curdr/bin/curdr-gateway serve --data ACTUAL_PATH` (one worker). Keep the same persistent data path. First installs need a persistent process/service and the owner's HTTPS reverse proxy/VPN; preserve SSE streaming without response buffering. Loopback alone is not a phone URL. Do not open public ports yourself.
@@ -51,3 +51,11 @@ Android remote notifications additionally need owner FCM/Expo credentials and a 
 ## Communication scope
 
 The bundled `curdr-chat` skill applies only to curdr requests. Keep it isolated from global Hermes SOUL.md/AGENTS.md and other clients. Short answers, useful interruptions and compact visual cards are defaults. Do not overwrite owner-edited skills; show any conflicting curdr-specific overrides for review.
+
+## Repeat updates on an existing host install
+
+Use `scripts/update.sh --data /ABSOLUTE/ACTUAL/CURDR/DATA` from a trusted curdr checkout. It reads the canonical pinned release, verifies the exact commit, backs up SQLite and private configuration, preserves existing speech support, installs an isolated environment and builds the web interface. It does not touch global Hermes instructions or restart an unknown service. For Docker use the existing Docker update path instead.
+
+After preparing, point the existing service at the printed new executable and restart only curdr. The data path stays unchanged. Check the live version, `curdr-gateway check` (`guidelines_ready`, `web_ready`, `hermes_ready`) and a browser connection. The gateway serves the web UI at its own URL; no Android installation is needed. Keep the same paired browser profile. A new browser pairs once using the host-generated code. Do not bypass authentication to make setup appear easier.
+
+The `prompts/chat.md` and `prompts/cofounder.md` files are package data in every gateway installation. They are loaded on every curdr request, including resumed Hermes runs. Owner preferences are additional context; the bundled attention budget remains present. Verify the packaged policy files, rather than telling Hermes to edit its global SOUL.md or AGENTS.md.
