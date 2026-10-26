@@ -67,3 +67,22 @@ def test_web_export_update_preserves_configuration_and_rejects_incomplete_export
     (export/'manifest.webmanifest').write_text('{}');cli.main()
     updated=json.loads((tmp_path/'config.json').read_text())
     assert updated=={**config,'web_dir':str(export)}
+
+def test_speech_runtime_configuration_preserves_venv_interpreter_and_active_profile(tmp_path,monkeypatch):
+    import sys
+    home=tmp_path/'profile';home.mkdir();env=home/'.env';env.write_text('API_SERVER_KEY=profile-api-key\n')
+    python=tmp_path/'hermes/.venv/bin/python';python.parent.mkdir(parents=True);python.symlink_to(sys.executable)
+    source=tmp_path/'hermes';(source/'tools').mkdir();(source/'tools/transcription_tools.py').write_text('')
+    async def ready(self):return True
+    monkeypatch.setattr(ExistingHermes,'health',ready)
+    data=tmp_path/'data'
+    cli.configure(Namespace(data=data,hermes_url=None,host=None,port=None,origin=None,hermes_env=env,hermes_python=python,hermes_root=source))
+    config=json.loads((data/'config.json').read_text())
+    assert config['hermes_home']==str(home)
+    assert config['hermes_python']==str(python) # resolving the symlink would lose the venv
+    assert config['hermes_root']==str(source)
+    for name in ('CURDR_TOKEN','CURDR_HERMES_API_URL','CURDR_HERMES_API_KEY_FILE','CURDR_HERMES_MODEL','CURDR_HERMES_SESSION_PREFIX','CURDR_DB','CURDR_WORKSPACE_DIR','CURDR_AGENT_MODE','CURDR_ORIGINS','CURDR_HERMES_HOME','CURDR_HERMES_ROOT','CURDR_HERMES_PYTHON'):
+        monkeypatch.setenv(name,__import__('os').environ.get(name,''))
+    cli.activate(data)
+    assert __import__('os').environ['CURDR_HERMES_PYTHON']==str(python)
+    assert __import__('os').environ['CURDR_HERMES_HOME']==str(home)

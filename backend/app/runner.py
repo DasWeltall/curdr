@@ -56,7 +56,11 @@ class Runner:
             return await self.existing.transcribe(data,filename)
         async with httpx.AsyncClient(timeout=180) as client:
             res=await client.post(f'{self.url}/transcribe',files={'file':(filename,data,'application/octet-stream')})
-            res.raise_for_status()
+            if not res.is_success:
+                from .errors import upstream_http_error
+                from .hermes_stt import SpeechError
+                failure=upstream_http_error(httpx.HTTPStatusError('Speech request failed.',request=res.request,response=res))
+                raise SpeechError(failure.detail['message'],failure.detail['code'],failure.status_code)
             text=res.json().get('text','').strip()
             if not text:
                 raise ValueError('No speech detected.')

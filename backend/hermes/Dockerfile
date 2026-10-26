@@ -8,6 +8,7 @@ COPY backend/requirements.txt /bridge/requirements.txt
 RUN python3 -m venv /bridge/.venv && /bridge/.venv/bin/pip install --no-cache-dir -r /bridge/requirements.txt faster-whisper==1.2.1 av==16.0.1
 RUN /bridge/.venv/bin/python -c "from huggingface_hub import snapshot_download; snapshot_download('Systran/faster-whisper-base',local_dir='/opt/curdr-stt')"
 COPY backend/hermes/bridge.py backend/hermes/worker.py backend/hermes/transcribe.py backend/hermes/local_stt.py /bridge/
+COPY backend/app/hermes_stt_worker.py /bridge/hermes_stt_worker.py
 RUN mkdir -p /workspace /opt/data && chown -R 1000:1000 /workspace /opt/data
 USER 1000:1000
 ENV HERMES_LOCAL_STT_COMMAND="/bridge/.venv/bin/python /bridge/local_stt.py {input_path} {output_dir}"

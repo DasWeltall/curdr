@@ -7,7 +7,6 @@ import json
 import os
 from pathlib import Path
 import secrets
-import shutil
 import shlex
 import sys
 
@@ -32,6 +31,16 @@ def configure(args):
     root=args.data.expanduser().resolve()
     config_path=root/'config.json'
     previous=json.loads(config_path.read_text()) if config_path.exists() else {}
+    hermes_home=str(args.hermes_home.expanduser().resolve()) if getattr(args,'hermes_home',None) else previous.get('hermes_home','')
+    if not hermes_home and getattr(args,'hermes_env',None):hermes_home=str(args.hermes_env.expanduser().resolve().parent)
+    speech={}
+    for name in ('hermes_python','hermes_root'):
+        value=getattr(args,name,None)
+        if value is not None:
+            path=value.expanduser().absolute()
+            if name=='hermes_python' and not (path.is_file() and os.access(path,os.X_OK)):raise ValueError('Choose the executable Python from your Hermes environment.')
+            if name=='hermes_root' and not (path/'tools/transcription_tools.py').is_file():raise ValueError('Choose the Hermes source directory containing tools/transcription_tools.py.')
+            speech[name]=str(path)
     key_file=root/'hermes-api-key'
     if getattr(args,'hermes_env',None):
         key=''
@@ -45,19 +54,20 @@ def configure(args):
     agent=ExistingHermes(args.hermes_url or previous.get('hermes_url','http://127.0.0.1:8642'),key=key)
     if not asyncio.run(agent.health()):raise ValueError('Hermes is not ready. Enable its API, check the address/key and run hermes gateway, then try again. Existing curdr configuration was kept.')
     root.mkdir(parents=True,exist_ok=True,mode=0o700)
-    configuration={**previous,'hermes_url':agent.url,'model':agent.model,'host':args.host or previous.get('host','127.0.0.1'),'port':args.port if args.port is not None else previous.get('port',8000),'origins':args.origin if args.origin is not None else previous.get('origins',[]),'hermes_home':str(args.hermes_home.expanduser().resolve()) if getattr(args,'hermes_home',None) else previous.get('hermes_home',''),'workspace':str(args.workspace.expanduser().resolve()) if getattr(args,'workspace',None) else previous.get('workspace',str(root/'workspace')),'session_prefix':previous.get('session_prefix','curdr-'+secrets.token_hex(8))}
+    configuration={**previous,'hermes_url':agent.url,'model':agent.model,'host':args.host or previous.get('host','127.0.0.1'),'port':args.port if args.port is not None else previous.get('port',8000),'origins':args.origin if args.origin is not None else previous.get('origins',[]),'hermes_home':hermes_home,**speech,'workspace':str(args.workspace.expanduser().resolve()) if getattr(args,'workspace',None) else previous.get('workspace',str(root/'workspace')),'session_prefix':previous.get('session_prefix','curdr-'+secrets.token_hex(8))}
     if not previous.get('web_dir') and (Path.cwd()/'dist/index.html').is_file():configuration['web_dir']=str(Path.cwd()/'dist')
     save_private(root/'hermes-api-key',key)
     if not (root/'gateway-token').exists():save_private(root/'gateway-token',secrets.token_urlsafe(32))
     save_private(config_path,json.dumps(configuration,indent=2)+'\n')
-    print('Hermes verified. curdr configuration saved. Next: curdr-gateway voice-setup, then curdr-gateway serve')
+    print('Hermes verified. curdr configuration saved. Next: curdr-gateway serve. Voice uses the selected Hermes speech provider.')
 
 def activate(root):
     root=root.expanduser().resolve()
     try: config=json.loads((root/'config.json').read_text())
     except FileNotFoundError:raise ValueError('Run curdr-gateway configure first.')
-    os.environ.update(CURDR_TOKEN=(root/'gateway-token').read_text().strip(),CURDR_HERMES_API_URL=config['hermes_url'],CURDR_HERMES_API_KEY_FILE=str(root/'hermes-api-key'),CURDR_HERMES_MODEL=config['model'],CURDR_HERMES_SESSION_PREFIX=config['session_prefix'],CURDR_DB=str(root/'curdr.db'),CURDR_STT_MODEL=str(root/'speech'),CURDR_WORKSPACE_DIR=config.get('workspace',str(root/'workspace')),CURDR_AGENT_MODE='hermes',CURDR_ORIGINS=','.join(config.get('origins',[])))
-    if config.get('hermes_home'):os.environ['CURDR_HERMES_HOME']=config['hermes_home']
+    os.environ.update(CURDR_TOKEN=(root/'gateway-token').read_text().strip(),CURDR_HERMES_API_URL=config['hermes_url'],CURDR_HERMES_API_KEY_FILE=str(root/'hermes-api-key'),CURDR_HERMES_MODEL=config['model'],CURDR_HERMES_SESSION_PREFIX=config['session_prefix'],CURDR_DB=str(root/'curdr.db'),CURDR_WORKSPACE_DIR=config.get('workspace',str(root/'workspace')),CURDR_AGENT_MODE='hermes',CURDR_ORIGINS=','.join(config.get('origins',[])))
+    for key,env in (('hermes_home','CURDR_HERMES_HOME'),('hermes_python','CURDR_HERMES_PYTHON'),('hermes_root','CURDR_HERMES_ROOT')):
+        if config.get(key):os.environ[env]=config[key]
     if config.get('web_dir'):os.environ['CURDR_WEB_DIR']=config['web_dir']
     return root,config
 
@@ -71,6 +81,8 @@ def main():
         if command=='configure':
             child.add_argument('--hermes-env',type=Path,help='Read API_SERVER_KEY locally without printing it; never evaluates shell expressions')
             child.add_argument('--hermes-home',type=Path,help='Explicit local Hermes profile for skill editing and installation')
+            child.add_argument('--hermes-python',type=Path,help='Python executable from the existing Hermes environment, for its configured speech provider')
+            child.add_argument('--hermes-root',type=Path,help='Hermes source directory, if not discoverable from its Python environment')
             child.add_argument('--workspace',type=Path,help='Explicit directory shared with Hermes for visible files and screenshots')
             child.add_argument('--hermes-url',default=None)
             child.add_argument('--host',type=private_host,default=None)
@@ -92,15 +104,14 @@ def main():
             from .existing_hermes import ExistingHermes
             agent=ExistingHermes(config['hermes_url'],key=(root/'hermes-api-key').read_text().strip())
             ready=asyncio.run(agent.health())
-            print(json.dumps(dict(version=version('curdr-gateway'),hermes_ready=ready,guidelines_ready=all((Path(__file__).parent/'prompts'/name).is_file() for name in ('chat.md','cofounder.md')),web_ready=(Path(config.get('web_dir','/app/web'))/'index.html').is_file(),voice_ready=bool(shutil.which('ffmpeg') and (root/'speech').is_dir()))))
+            print(json.dumps(dict(version=version('curdr-gateway'),hermes_ready=ready,guidelines_ready=all((Path(__file__).parent/'prompts'/name).is_file() for name in ('chat.md','cofounder.md')),web_ready=(Path(config.get('web_dir','/app/web'))/'index.html').is_file(),voice_ready=agent.audio_ready,voice=agent.stt_status)))
             if not ready:sys.exit(1)
             return
         if args.command=='voice-setup':
-            if not shutil.which('ffmpeg'):raise ValueError('Install ffmpeg on this host, then retry voice-setup.')
-            try:from faster_whisper.utils import download_model
-            except ImportError:raise ValueError('Install the voice extra: python -m pip install ".[voice]" inside backend/')
-            download_model('base',output_dir=str(root/'speech'))
-            print('Offline voice recognition is ready. Recordings stay on this host.');return
+            from .hermes_stt import HermesSTT
+            status=asyncio.run(HermesSTT(config['hermes_url']).check())
+            if not status.get('ready'):raise ValueError(status.get('error','Hermes speech is unavailable.')+' ('+status.get('code','hermes_stt_unavailable')+')')
+            print('Hermes speech is ready. Provider: '+str(status.get('provider','auto'))+'. Model, language and credentials come from the active Hermes profile.');return
         from .db import Database
         from .pairing import issue_pair
         db=Database(root/'curdr.db',recover=False)

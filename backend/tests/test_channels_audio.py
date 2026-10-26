@@ -89,3 +89,18 @@ def test_invalid_waveform_is_rejected_without_saving(connected,peaks):
     assert response.status_code==422
     assert app.state.db.all('messages')==[]
     assert runner.calls==[]
+
+def test_speech_provider_error_is_visible_in_voice_and_brain_dump(connected):
+    from app.hermes_stt import SpeechError
+    client,app,runner=connected
+    async def unavailable(*args):raise SpeechError('Selected speech provider has no remaining quota.','hermes_stt_provider_failed')
+    runner.transcribe=unavailable
+    for path in ('/audio','/transcribe'):
+        response=client.post(path,files={'file':('voice.webm',b'recorded-audio','audio/webm')},data={'duration':'2'})
+        assert response.status_code==502
+        assert response.json()['detail']['code']=='hermes_stt_provider_failed'
+        assert 'quota' in response.json()['detail']['message']
+    audio=next(m for m in app.state.db.all('messages') if m.get('kind')=='audio')
+    assert audio['processing']=='failed' and audio['errorCode']=='hermes_stt_provider_failed'
+    assert client.get('/files/'+audio['fileId']+'/download').content==b'recorded-audio'
+    assert runner.calls==[]

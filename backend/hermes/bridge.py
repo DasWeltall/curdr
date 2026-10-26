@@ -49,7 +49,13 @@ async def health():
         configured=False
     if not configured:
         raise HTTPException(503,'Model proxy is not configured.')
-    return dict(ready=True,audio_ready=Path('/opt/curdr-stt/model.bin').is_file() and Path('/bridge/local_stt.py').is_file(),runtime='NousResearch/hermes-agent',revision='bda3a363e9695e3f63fce4a7ca85ba17b5fecb61',tools=['memory','skills_list','skill_view','skill_manage'])
+    speech=await asyncio.create_subprocess_exec(os.environ.get('HERMES_PYTHON',sys.executable),'/bridge/transcribe.py','--check',stdout=asyncio.subprocess.PIPE,stderr=asyncio.subprocess.DEVNULL)
+    try:
+        out,_=await asyncio.wait_for(speech.communicate(),20);audio=json.loads(out)
+    except (asyncio.TimeoutError,ValueError):
+        if speech.returncode is None:speech.kill();await speech.wait()
+        audio={'ready':False}
+    return dict(ready=True,audio_ready=audio.get('ready') is True,runtime='NousResearch/hermes-agent',revision='bda3a363e9695e3f63fce4a7ca85ba17b5fecb61',tools=['memory','skills_list','skill_view','skill_manage'])
 
 
 @app.post('/run')
@@ -93,8 +99,10 @@ async def transcribe(file:UploadFile=File(...)):
             process=await asyncio.create_subprocess_exec(os.environ.get('HERMES_PYTHON',sys.executable),'/bridge/transcribe.py',str(source),stdout=asyncio.subprocess.PIPE,stderr=asyncio.subprocess.PIPE,start_new_session=True)
             try:
                 out,_=await asyncio.wait_for(process.communicate(),timeout=160)
-                if process.returncode: raise HTTPException(502,'Local transcription failed.')
-                return json.loads(out)
+                if process.returncode: raise HTTPException(502,'Hermes transcription worker failed.')
+                result=json.loads(out)
+                if result.get('error'):raise HTTPException(result.get('status',502),{'message':result['error'],'code':result.get('code','hermes_stt_failed'),'source':'hermes'})
+                return result
             except asyncio.TimeoutError:
                 raise HTTPException(504,'Transcription timed out.')
             finally:

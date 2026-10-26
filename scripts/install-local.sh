@@ -26,11 +26,11 @@ if "$curdr_voice"; then command -v ffmpeg >/dev/null; fi
 python3 -m venv .venv-curdr
 curdr_python="$curdr_root/.venv-curdr/bin/python"
 curdr_cli="$curdr_root/.venv-curdr/bin/curdr-gateway"
-if "$curdr_voice"; then "$curdr_python" -m pip install './backend[voice]'; else "$curdr_python" -m pip install ./backend; fi
+"$curdr_python" -m pip install ./backend
 npm ci --no-audit --no-fund
 npm run build:web
 "$curdr_cli" configure "${curdr_args[@]}"
 "$curdr_cli" web --data "$curdr_data" --dir "$curdr_root/dist"
-if "$curdr_voice" && [[ ! -d "$curdr_data/speech" ]]; then "$curdr_cli" voice-setup --data "$curdr_data"; fi
+if "$curdr_voice"; then "$curdr_cli" voice-setup --data "$curdr_data"; fi
 "$curdr_cli" check --data "$curdr_data"
 echo 'Prepared. Start/restart your existing curdr service using this release and the same --data path. New installs: .venv-curdr/bin/curdr-gateway serve'

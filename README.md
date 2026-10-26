@@ -17,7 +17,7 @@ bash /tmp/curdr-install.sh
 
 Open your server’s curdr URL and pair using the code printed on the host. Use the web interface on any phone or computer. On iPhone, add it to your Home Screen. Android users can also install the APK from [Releases](https://github.com/DasWeltall/curdr/releases).
 
-Requires Python 3.11+, Node 24+, Git and model access. Voice transcription additionally needs FFmpeg and the `--voice` install option. See [connection setup](docs/CONNECT-HERMES.md) and [notification setup](docs/NOTIFICATIONS.md).
+Requires Python 3.11+, Node 24+, Git and model access. Voice uses the speech provider configured in your Hermes profile and needs FFmpeg on that host. See [connection setup](docs/CONNECT-HERMES.md) and [notification setup](docs/NOTIFICATIONS.md).
 
 ## How it works
 

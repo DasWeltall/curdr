@@ -1,11 +1,8 @@
 """Adapter for an existing Hermes API server; provider keys stay on that host."""
 import asyncio
-import importlib.util
 import json
 import os
 from pathlib import Path
-import sys
-import tempfile
 from urllib.parse import urlsplit
 import httpx
 from .db import uid
@@ -23,6 +20,7 @@ class ExistingHermes:
         if not self.key: raise ValueError('The Hermes API key is missing.')
         self.model = os.getenv('CURDR_HERMES_MODEL', 'hermes-agent')
         self.capabilities = {}
+        self.stt_status = {'ready':False}
         self.poll_interval = 2
         self.detaching = False
         self.transport = transport
@@ -44,16 +42,18 @@ class ExistingHermes:
                 result = await client.get(self.url+'/health/detailed', headers=self.headers())
                 caps=await client.get(self.url+'/v1/capabilities',headers=self.headers())
                 if caps.status_code==200:self.capabilities=caps.json()
-                if result.status_code == 404: return True  # Older APIs expose only /health.
-                result.raise_for_status()
-                return result.json().get('status') in ('ok','ready','healthy')
+                if result.status_code != 404:result.raise_for_status()
+                ready=result.status_code==404 or result.json().get('status') in ('ok','ready','healthy')
+                if ready:
+                    from .hermes_stt import HermesSTT
+                    self.stt_status=await HermesSTT(self.url,self.key).check()
+                return ready
         except (httpx.HTTPError,ValueError,KeyError,TypeError):
             return False
 
     @property
     def audio_ready(self):
-        import shutil
-        return bool(shutil.which('ffmpeg') and importlib.util.find_spec('faster_whisper') and (Path(os.getenv('CURDR_STT_MODEL','/opt/curdr-stt'))/'model.bin').is_file())
+        return self.stt_status.get('ready') is True
 
     async def ask(self, text, settings, history=None, purpose='chat', skills=None, channel='main', workspace='', on_event=None, session_id=None):
         language={'en':'Reply in English.','de':'Reply in German.'}.get(settings.get('replyLanguage'),'Reply in the user’s language, unless they ask otherwise.')
@@ -74,20 +74,8 @@ class ExistingHermes:
             return content+('\n\nThis result is partial: Hermes reached its turn limit.' if choice.get('finish_reason')=='length' else '')
 
     async def transcribe(self, data, filename):
-        if not self.audio_ready: raise ValueError('Run curdr-gateway voice-setup on the gateway host.')
-        with tempfile.TemporaryDirectory(prefix='curdr-voice-') as directory:
-            source=Path(directory)/Path(filename).name
-            source.write_bytes(data)
-            process=await asyncio.create_subprocess_exec(sys.executable,'-m','app.stt_worker',str(source),stdout=asyncio.subprocess.PIPE,stderr=asyncio.subprocess.DEVNULL)
-            try: output,_=await asyncio.wait_for(process.communicate(),180)
-            except BaseException:
-                if process.returncode is None: process.kill()
-                await process.wait()
-                raise
-            if process.returncode: raise ValueError('Speech recognition failed.')
-            text=json.loads(output).get('text','').strip()
-            if not text: raise ValueError('No speech detected.')
-            return text
+        from .hermes_stt import HermesSTT
+        return await HermesSTT(self.url,self.key).transcribe(data,filename)
 
     async def request(self,path,method='GET',body=None):
         async with httpx.AsyncClient(timeout=20,transport=self.transport) as client:
@@ -120,7 +108,7 @@ class ExistingHermes:
                 name=model if isinstance(model,str) else (model.get('id') or model.get('model') or '') if isinstance(model,dict) else ''
                 if isinstance(name,str) and name and isinstance(slug,str) and slug:models.append({'model':name,'provider':slug})
         features=caps.get('features',{})
-        return dict(connected=True,streaming=bool(features.get('run_events_sse') or features.get('chat_completions_streaming')),approvals=bool(features.get('run_approval_response') or features.get('run_approval')),model=options.get('model',self.model),provider=options.get('provider',''),models=models[:250],discoveryErrors=discovery_errors,toolsets=rows(tools),jobs=rows(jobs,'jobs'),skills=rows(skills))
+        return dict(connected=True,streaming=bool(features.get('run_events_sse') or features.get('chat_completions_streaming')),approvals=bool(features.get('run_approval_response') or features.get('run_approval')),model=options.get('model',self.model),provider=options.get('provider',''),models=models[:250],audio=self.stt_status,discoveryErrors=discovery_errors,toolsets=rows(tools),jobs=rows(jobs,'jobs'),skills=rows(skills))
 
     async def stream_run(self,text,system,settings,history,channel,on_event,session_id):
         if not self.capabilities.get('features',{}).get('run_submission'):

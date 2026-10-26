@@ -3,13 +3,13 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 [project]
 name = "curdr-gateway"
-version = "1.0.0"
+version = "1.0.1"
 description = "A personal Expo app gateway for an existing Hermes agent"
 requires-python = ">=3.11"
 license = "MIT"
 dependencies = ["fastapi==0.162.0", "uvicorn==0.54.0", "httpx==0.28.1", "python-multipart==0.0.32"]
 [project.optional-dependencies]
-voice = ["faster-whisper==1.2.1"]
+voice = []
 [project.scripts]
 curdr-gateway = "app.cli:main"
 [tool.setuptools]

@@ -6,8 +6,26 @@ on:
 permissions:
   contents: write
 jobs:
+  release-kind:
+    runs-on: ubuntu-latest
+    outputs:
+      build_apk: ${{ steps.kind.outputs.build_apk }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: kind
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          curdr_app_version="$(python3 -c 'import json; print(json.load(open("package.json"))["version"])')"
+          if [ "$EVENT_NAME" = workflow_dispatch ] || [ "$RELEASE_TAG" = "v$curdr_app_version" ]; then
+            echo 'build_apk=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'build_apk=false' >> "$GITHUB_OUTPUT"
+          fi
   apk:
-    if: ${{ !startsWith(github.event.release.tag_name, 'gateway-') }}
+    needs: release-kind
+    if: ${{ needs.release-kind.outputs.build_apk == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

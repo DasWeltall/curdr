@@ -107,7 +107,7 @@ def create_app(path=None, runner=None):
         await asyncio.gather(task,monitor,notifications,*jobs.values(),return_exceptions=True)
         db.conn.close()
 
-    app=FastAPI(title='curdr Gateway',version='1.0.0',lifespan=lifespan)
+    app=FastAPI(title='curdr Gateway',version='1.0.1',lifespan=lifespan)
     app.state.db=db
     from .notifications import register as register_push
     register_push(app,db,auth,push)
@@ -187,7 +187,7 @@ def create_app(path=None, runner=None):
         ready=await runner.health() if runner.mode=='hermes' else False
         info=db.get('meta','hermes') or {}
         tools={name for group in info.get('toolsets',[]) if group.get('enabled') and group.get('configured') for name in group.get('tools',[]) if isinstance(name,str)}
-        return dict(ok=True,agent=runner.mode,connection_type='existing' if getattr(runner,'existing',None) else 'managed',agent_status='ready' if ready else 'unavailable' if runner.mode=='hermes' else 'mock',version='1.0.0',capabilities=dict(chat=ready,planning=ready,memory=ready,skills=ready,visuals=ready,sleep=ready,audio=ready and getattr(runner,'audio_ready',False),channels=ready,terminal=ready and any(name in tools for name in ('terminal','terminal_exec')),browser=ready and 'browser_exec' in tools,connectors=False,streaming=ready and bool(info.get('streaming')),approvals=ready and bool(info.get('approvals'))))
+        return dict(ok=True,agent=runner.mode,connection_type='existing' if getattr(runner,'existing',None) else 'managed',agent_status='ready' if ready else 'unavailable' if runner.mode=='hermes' else 'mock',version='1.0.1',capabilities=dict(chat=ready,planning=ready,memory=ready,skills=ready,visuals=ready,sleep=ready,audio=ready and getattr(runner,'audio_ready',False),channels=ready,terminal=ready and any(name in tools for name in ('terminal','terminal_exec')),browser=ready and 'browser_exec' in tools,connectors=False,streaming=ready and bool(info.get('streaming')),approvals=ready and bool(info.get('approvals'))))
 
     @app.get('/runtime',dependencies=[Depends(auth)])
     async def runtime_info():
@@ -403,10 +403,13 @@ def create_app(path=None, runner=None):
             db.event('file_added',item);db.event('message',message);activity(channel,'think')
             try:
                 text=await runner.transcribe(data,item['name'])
-            except Exception:
-                db.event('message',{**message,'processing':'failed'})
+            except Exception as error:
+                from .hermes_stt import SpeechError
+                from .errors import public_text
+                failure=error if isinstance(error,SpeechError) else SpeechError(public_text(error) or 'Hermes transcription failed.')
+                db.event('message',{**message,'processing':'failed','error':str(failure),'errorCode':failure.code})
                 activity(channel,'idle')
-                raise HTTPException(502,'Audio saved, but transcription failed. Check local speech recognition on the Hermes host.')
+                raise HTTPException(failure.status,failure.detail)
             db.event('message',{**message,'transcript':text,'processing':'ready'})
             try:
                 await respond(text,channel,add_user=False)
@@ -426,7 +429,11 @@ def create_app(path=None, runner=None):
         try:
             async with queue: text=await runner.transcribe(data,'voice'+formats[mime])
             return dict(text=text)
-        except Exception:raise HTTPException(502,'Transcription failed. Check local speech recognition on the Hermes host.')
+        except Exception as error:
+            from .hermes_stt import SpeechError
+            from .errors import public_text
+            failure=error if isinstance(error,SpeechError) else SpeechError(public_text(error) or 'Hermes transcription failed.')
+            raise HTTPException(failure.status,failure.detail)
 
     @app.post('/braindump',dependencies=[Depends(auth)])
     async def braindump(body:TextBody):

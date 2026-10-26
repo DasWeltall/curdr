@@ -70,5 +70,5 @@ git clone --depth 1 --branch "$curdr_tag" "$curdr_repo" "$curdr_release_path"
 [[ "$(git -C "$curdr_release_path" rev-parse HEAD)" = "$curdr_sha" ]] || { echo 'Release commit mismatch. Stopped without executing curdr.' >&2; exit 1; }
 if "$curdr_voice"; then curdr_args+=(--voice); fi
 bash "$curdr_release_path/scripts/install-local.sh" --hermes-env "$curdr_home/.env" --hermes-home "$curdr_home" "${curdr_args[@]}"
-echo 'Starting curdr on this server. Phone access needs your HTTPS/VPN address; see docs/SELF-HOST.md.'
+echo 'Starting curdr on this server. Phone access needs your HTTPS/VPN address; see docs/CONNECT-HERMES.md.'
 exec "$curdr_release_path/.venv-curdr/bin/curdr-gateway" serve

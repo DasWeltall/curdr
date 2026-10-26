@@ -22,7 +22,7 @@ Use Python 3.11+, ffmpeg and the extracted curdr source folder:
 ```bash
 python3 -m venv .venv-curdr
 . .venv-curdr/bin/activate
-python -m pip install './backend[voice]'
+python -m pip install ./backend
 curdr-gateway configure --host 192.168.1.50
 curdr-gateway voice-setup
 curdr-gateway serve
@@ -30,11 +30,22 @@ curdr-gateway serve
 
 Replace `192.168.1.50` with this host's actual LAN IP. Configure asks for **the existing Hermes API key privately**, verifies authenticated readiness, and stores it only on that host. A failed verification preserves existing configuration. The gateway uses its own generated app token. `serve` prints the app address and a single-use pairing code valid for ten minutes. Generate a new code later with `curdr-gateway pair` in another terminal using the same user/data directory. Keep the service running. Allow TCP 8000 only from your trusted LAN; do not forward it from your router.
 
-`voice-setup` downloads the public Whisper base model once. Afterward voice decoding/transcription runs offline on the gateway CPU. Recordings are stored in the app workspace; Hermes receives their transcript as a normal conversation turn. The official Hermes API does not document an audio upload/transcription endpoint, so curdr performs this step beside Hermes. No transcript is invented if recognition fails. Install ffmpeg through your OS package manager. Omit the voice extra if you only need text chat.
+Voice messages and Brain Dump transcription use Hermes’ original `transcribe_audio` function, in Hermes’ Python environment and active profile. Its selected provider, model, language and credentials apply. curdr does not select a separate Whisper model or silently fall back to its old local recognizer. A cloud provider may upload audio and charge according to its configuration, just as it does for Telegram voice messages.
+
+`voice-setup` checks this integration without transcribing or downloading a model. The usual local Hermes installation is discovered automatically. For a custom installation, configure the actual paths once:
+
+```bash
+curdr-gateway configure --data /ABSOLUTE/CURDR/DATA \
+  --hermes-home /ABSOLUTE/ACTIVE/HERMES/PROFILE \
+  --hermes-python /ABSOLUTE/HERMES/.venv/bin/python
+curdr-gateway voice-setup --data /ABSOLUTE/CURDR/DATA
+```
+
+Add `--hermes-root /ABSOLUTE/HERMES` if its source is not discoverable. Restart curdr after configuration. Run curdr beside the existing Hermes environment; a remote HTTP connection alone does not expose Hermes’ Telegram transcription. The profile must match the connected Hermes, especially with multiple profiles. A mismatched inferred default profile is rejected. Provider failures are shown with an error code and the original recording is retained; no transcript is invented.
 
 ## 3. Pair the Android app
 
-Install the preview APK, connect the phone to the same Wi-Fi, and open **Connect Hermes**:
+Install the Android APK, connect the phone to the same Wi-Fi, and open **Connect Hermes**:
 
 1. Enter the printed LAN gateway address (usually port 8000, not Hermes port 8642).
 2. Paste the pairing code into the app. The code is exchanged once; the app token is held in Android SecureStore.
@@ -63,7 +74,7 @@ The default persistent directory is `~/.local/share/curdr`:
 | `config.json` | API address, binding, browser origins, model alias and stable channel memory prefix |
 | `gateway-token` | App credential; file mode 0600 |
 | `hermes-api-key` | Existing Hermes API credential; file mode 0600 |
-| `speech/` | Downloaded offline transcription model |
+| `speech/` | Legacy curdr speech model, if previously installed; no longer used for existing-Hermes transcription |
 
 The phone stores its connection token in SecureStore, its gateway address and a local preference backup in AsyncStorage. The browser keeps its token in sessionStorage, so it must be paired again after the browser session ends. The gateway is the source of truth for connected work. Full offline conversation editing/sync is not implemented. Changing gateways does not merge unrelated conversation databases. Profile transfer copies only personal preferences, not remote budgets, models or permissions. Disconnect keeps the latest preferences on the device. Local/Demo work never silently imports fabricated conversations into Hermes.
 

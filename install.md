@@ -19,7 +19,7 @@ For manual installation from the verified release checkout:
 bash scripts/install-local.sh --data /ABSOLUTE/CURDR/DATA --hermes-env /ABSOLUTE/HERMES/.env
 ```
 
-Add `--voice` with FFmpeg installed for local transcription. Reuse existing network bindings and credentials. See [connection setup](docs/CONNECT-HERMES.md).
+Voice uses Hermes’ selected speech provider. Install FFmpeg on that host; `--voice` checks the existing Hermes speech setup without downloading a separate model. Reuse existing network bindings and credentials. See [connection setup](docs/CONNECT-HERMES.md).
 
 ## Existing installation
 
