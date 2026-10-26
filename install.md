@@ -33,7 +33,7 @@ This verifies the pinned release, backs up the database and configuration, and p
 
 ## Open and verify
 
-Run `curdr-gateway check --data ACTUAL_PATH` and check the live `/health` version. Use `curdr-gateway pair --data ACTUAL_PATH` to obtain a short-lived pairing code. Return the working HTTPS/VPN URL and code privately. A loopback URL cannot be opened from another phone. Preserve SSE streaming through the reverse proxy; do not open public ports or disable authentication.
+Run `curdr-gateway check --data ACTUAL_PATH` and check the live `/health` version. For voice, run `curdr-gateway voice-setup --data ACTUAL_PATH` and verify the active Hermes provider is ready. Configure its actual profile/Python paths if needed; do not replace its chosen provider or install a separate curdr Whisper model. Use `curdr-gateway pair --data ACTUAL_PATH` to obtain a short-lived pairing code. Return the working HTTPS/VPN URL and code privately. A loopback URL cannot be opened from another phone. Preserve SSE streaming through the reverse proxy; do not open public ports or disable authentication.
 
 Open the URL, connect and pair. The gateway serves the web interface, including on iPhone. In Safari, use Share → Add to Home Screen. Android users may also install the APK from [Releases](https://github.com/DasWeltall/curdr/releases). Update both the gateway and native app for native fixes.
 

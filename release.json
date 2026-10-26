@@ -1,7 +1,7 @@
 {
-  "version": "1.0.0",
+  "version": "1.0.1",
   "app_version": "1.0.0",
-  "tag": "v1.0.0",
-  "commit": "8f9bfc76ad68662afcc94f50e6ae9f7cf8a5c18b",
+  "tag": "v1.0.1",
+  "commit": "bf5710c1b08a3d8a2b067f005e3f889058b8a59f",
   "agent_guide": "https://raw.githubusercontent.com/DasWeltall/curdr/main/install.md"
 }
