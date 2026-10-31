@@ -6,12 +6,13 @@ function upsert<T extends { id: string }>(xs: T[], x: T) {
 }
 export function reduce(state: Snapshot, event: AgentEvent): Snapshot {
   switch (event.type) {
+    case "capture":return {...state,captures:upsert(state.captures||[],event.data)};
     case "run": return {...state,runs:upsert(state.runs||[],event.data)};
     case "hermes": return {...state,hermes:event.data};
     case "channels": return { ...state, channels: event.data };
     case "activity": return { ...state, iconState: event.data.state, activityChannel: event.data.channel };
     case "snapshot":
-      return { ...event.data, channels: event.data.channels || [] };
+      return { ...event.data, captures:event.data.captures||[], channels: event.data.channels || [] };
     case "message": {
       const previous=state.messages.find(m=>m.id===event.data.id);
       // A replayed partial must never replace a completed reply or its visual card.
@@ -37,5 +38,6 @@ export function reduce(state: Snapshot, event: AgentEvent): Snapshot {
       return { ...state, skills: event.data };
     case "log":
       return { ...state, logs: [...state.logs, event.data].slice(-100) };
+    default:return state;
   }
 }

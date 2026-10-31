@@ -79,6 +79,8 @@ class Database:
                 elif type == 'channels':
                     for channel in data:
                         self.put('channels',channel['id'],channel)
+                elif type == 'capture':
+                    self.put('brain_dumps',data['id'],data)
                 elif type == 'run':
                     self.put('runs',data['id'],data)
                 elif type == 'hermes':
@@ -109,6 +111,7 @@ class Database:
     def snapshot(self):
         with self.lock:
             state = {k: self.all(k) for k in ('tasks', 'files', 'messages', 'approvals', 'skills', 'channels','runs')}
+            state['captures']=self.all('brain_dumps')[-50:]
             state['hermes']=self.get('meta','hermes')
             state.update(settings=self.get('settings', 'main'), iconState='work' if any(t['status']=='run' for t in state['tasks']) else 'idle', logs=[l['text'] for l in self.all('logs')][-100:])
             activity=self.get('meta','activity') or {}

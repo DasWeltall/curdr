@@ -4,7 +4,7 @@ import {buildUploadForm,VOICE_LIMIT} from "./multipart";
 import {readUploadFile} from "./uploadFile";
 import EventSource from "react-native-sse";
 import {
-  AgentEvent,
+  AgentEvent, BrainCapture,
   OutputFile, Upload, VoiceUpload,
   Draft,
   Settings,
@@ -55,7 +55,7 @@ export class HttpTransport implements Transport {
   }
   connect(onEvent: (e: AgentEvent) => void, onStatus: (s: string) => void) {
     const cursor=new StreamCursor();
-    const es = new EventSource(`${this.url}/stream`, {
+    const es = new EventSource(`${this.url}/stream?captures=1`, {
       headers: { Authorization: `Bearer ${this.token}` },
       pollingInterval: 3000,
     });
@@ -77,6 +77,10 @@ export class HttpTransport implements Transport {
   }
   async message(text: string, channel?: string, attachments?: string[],clientId?:string) {
     await this.request("/message", "POST", { text, channel, attachments,client_id:clientId });
+  }
+  async startCapture(text:string,voice?:VoiceUpload,clientId?:string):Promise<BrainCapture>{
+    if(voice){const form=await buildUploadForm(voice,{text,duration:String(voice.duration),...(clientId?{client_id:clientId}:{})},readUploadFile,VOICE_LIMIT);return this.request('/captures/audio','POST',form);}
+    return this.request('/captures','POST',{text,client_id:clientId});
   }
   async braindump(text: string): Promise<Draft[]> {
     return (await this.request("/braindump", "POST", { text })).tasks;

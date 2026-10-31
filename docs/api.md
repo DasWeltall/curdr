@@ -60,3 +60,13 @@ All endpoints below require the same gateway bearer authentication. They act on 
 - `POST /library/skills/install` with qualified `source`: invokes the official Hermes installer on an explicitly configured local Hermes home. Security scan rejection is reported; no force flag is used. Remote-only API connections do not silently gain host write access.
 
 Founder fields in settings: `founderProfile` with project/customer/stage/goal/capacity/boundaries/interruptions, `founderInterviewDone`, `morningPrompt`, `checkPrompt`. The co-founder behavior respects the user's language; English UI does not imply English-only responses.
+
+## Background brain dumps
+
+`POST /captures` with `{text, client_id?}` saves a capture and returns HTTP 202. `POST /captures/audio` accepts the same bounded audio upload as `/transcribe`, plus optional `text` and `client_id`. The gateway owns transcription and planning after upload; closing the client does not cancel it. One capture is planned at a time while normal chat remains available.
+
+`GET /captures/{id}` returns status, phase, actual tool activities, saved drafts and any diagnostic. `POST /captures/{id}/dismiss` removes its review indicator while retaining history. Ready capture drafts remain reviewable after the legacy one-hour suggestion timeout.
+
+The stream sends `capture` events to clients that opt in with `/stream?captures=1`; snapshots also include `captures`. Older clients do not receive the new event kind. Job states are `queued`, `transcribing`, `planning`, `ready`, `failed` and `interrupted`. In-flight work is not automatically replayed after a gateway restart.
+
+Browser runs may include `browser` metadata and a `fileId` for an actual saved frame. The gateway imports only local image files under the configured shared workspace or narrow Hermes browser-cache directories. It does not fetch arbitrary screenshot URLs or provide a continuous video stream.

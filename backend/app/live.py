@@ -55,7 +55,7 @@ class LiveRuntime:
             try:
                 if path.is_symlink() or not path.is_file() or path.suffix.lower() not in allowed:continue
                 resolved=path.resolve()
-                if self.root not in resolved.parents or any(p.startswith('.') for p in path.relative_to(self.root).parts) or path.relative_to(self.root).parts[0]=='uploads':continue
+                if self.root not in resolved.parents or any(p.startswith('.') for p in path.relative_to(self.root).parts) or path.relative_to(self.root).parts[0] in ('uploads','browser'):continue
                 size=path.stat().st_size
                 if size>10*1024*1024:continue
                 relative=path.relative_to(self.root).as_posix()
@@ -88,6 +88,7 @@ class LiveRuntime:
                 if sequence<=run.get('lastSeq',-1):return
                 run['lastSeq']=sequence
             except (ValueError,TypeError):pass
+        if event.get('capture_id'):run['captureId']=event['capture_id'];run['title']='Brain dump'
         if kind=='run.created':self.active_run[channel]=id
         if event.get('session_id'):
             run['sessionId']=event['session_id'];self.db.put('meta','session:'+channel,{'id':event['session_id']})
@@ -127,6 +128,10 @@ class LiveRuntime:
             if existing is not None:item['detail']=preview or activities[existing].get('detail','');activities[existing]=item
             else:activities.append(item)
             run['activities']=activities[-80:]
+            from .browser_activity import browser_activity
+            browser_tool=any(name in tool.lower() for name in ('browser','playwright','puppeteer'))
+            browser=browser_activity(self.db,self.root,run,tool if browser_tool else 'browser' if run.get('browser') and kind=='tool.completed' else tool,str(event.get('preview') or event.get('delta') or '') if browser_tool else '')
+            if browser:run['browser']=browser
             if kind in ('tool.completed','tool.failed'):self.scan_files(channel)
         elif kind in ('approval.request','clarify.request'):
             await self.prompt(id,event,channel,task_id)
@@ -209,16 +214,18 @@ class LiveRuntime:
         self.db.event('approval',{**approval,'state':'approved' if decision in ('approve','session','always') else 'denied','decision':decision})
         self.resume_task(approval.get('taskId'))
 
-    async def ask(self,text,settings,history=None,purpose='chat',skills=None,channel='main',workspace='',task_id=None):
+    async def ask(self,text,settings,history=None,purpose='chat',skills=None,channel='main',workspace='',task_id=None,capture_id=None,on_progress=None):
         settings={**settings,'_cofounder':(self.db.get('skill_sources','curdr-cofounder') or {}).get('content',''),'_chat_style':(self.db.get('skill_sources','curdr-chat') or {}).get('content','')}
         if not self.adapter:return await self.runner.ask(text,settings,history,purpose=purpose,skills=skills,channel=channel,workspace=workspace)
         if not settings['sbx']:raise ValueError('Hermes is paused in Settings.')
         self.partial.pop(channel,None);self.text[channel]='';self.active_run.pop(channel,None)
         settings={**settings,'_cofounder':(self.db.get('skill_sources','curdr-cofounder') or {}).get('content','')}
         session=self.db.get('meta','session:'+channel)
-        if self.root:workspace+='\nSave files and screenshots for the user in this shared workspace directory: '+str(self.root)+'. Include useful outputs there so curdr can show them. Do not access other curdr configuration or credential files.'
+        if self.root:workspace+='\nSave files and screenshots for the user in this shared workspace directory: '+str(self.root)+'. Include useful outputs there so curdr can show them. For browser work, save actual screenshots after meaningful page changes under browser/'+channel+' in this workspace when your browser tools support screenshots. Never manufacture a browser preview. Do not access other curdr configuration or credential files.'
         async def callback(event):
-            if purpose in ('proactive','briefing','channel') and event.get('event') in ('message.delta','assistant.delta','message.interim','assistant.commentary'):return
+            if on_progress:await on_progress(event)
+            if capture_id:event={**event,'capture_id':capture_id}
+            if purpose in ('proactive','briefing','channel','braindump') and event.get('event') in ('message.delta','assistant.delta','message.interim','assistant.commentary'):return
             await self.event(event,channel,task_id)
         try:
             output=await self.adapter.ask(text,settings,None if session else history,purpose,skills,channel,workspace,on_event=callback,session_id=session.get('id') if session else None)

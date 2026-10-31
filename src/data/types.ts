@@ -18,6 +18,7 @@ export interface Task {
   instruction?: string; external?: boolean; hermesRunId?: string;
 }
 export interface OutputFile {
+  previewKind?:"browser";runId?:string;
   id: string;
   name: string;
   channel: string;
@@ -27,8 +28,9 @@ export interface OutputFile {
   base64?: string;
   origin?: string;
 }
+export interface BrainCapture {id:string;text:string;createdAt:string;updatedAt?:string;status?:'queued'|'transcribing'|'planning'|'ready'|'failed'|'interrupted';phase?:string;drafts?:Draft[];activities?:{id:string;title:string;detail?:string;state:string;at:string}[];runId?:string;dismissed?:boolean;saved?:string[];error?:string;}
 export interface RunActivity { id: string; type: string; title: string; detail?: string; at: string; failed?: boolean; }
-export interface AgentRun { title?:string;resultPreview?:string; id: string; channel: string; status: string; detail: string; startedAt: string; updatedAt: string; taskId?: string; sessionId?: string; activities: RunActivity[]; error?: string; }
+export interface AgentRun { captureId?:string;browser?:{url?:string;action?:string;fileId?:string;capturedAt?:string;updatedAt:string}; title?:string;resultPreview?:string; id: string; channel: string; status: string; detail: string; startedAt: string; updatedAt: string; taskId?: string; sessionId?: string; activities: RunActivity[]; error?: string; }
 export interface HermesInfo { connected: boolean; streaming: boolean; approvals: boolean; models: {model:string;provider:string}[]; model?: string; provider?: string; toolsets: {name:string;enabled:boolean;configured:boolean;tools:string[]}[]; jobs: {id:string;name:string;enabled?:boolean;last_status?:string;next_run_at?:string}[]; error?: string; workspace?:string; }
 export interface Skill {
   id: string;
@@ -107,6 +109,7 @@ export interface Settings {
   apps: Record<string, boolean>;
 }
 export interface Snapshot {
+  captures?:BrainCapture[];
   runs?: AgentRun[]; hermes?: HermesInfo;
   channels: ChannelWorkspace[];
   activityChannel?: string;
@@ -120,6 +123,7 @@ export interface Snapshot {
   logs: string[];
 }
 export type AgentEvent =
+  | {type:"capture";data:BrainCapture}
   | { type: "run"; data: AgentRun }
   | { type: "hermes"; data: HermesInfo }
   | { type: "channels"; data: ChannelWorkspace[] }
@@ -149,6 +153,7 @@ export interface Transport {
     onStatus: (status: string) => void,
   ) => () => void;
   message: (text: string, channel?: string, attachments?: string[], clientId?:string) => Promise<void>;
+  startCapture?: (text:string,voice?:VoiceUpload,clientId?:string)=>Promise<BrainCapture>;
   braindump: (text: string) => Promise<Draft[]>;
   commitDraft: (draft: Draft, start: boolean) => Promise<Task>;
   task: (id: string, action: TaskAction, text?: string) => Promise<void>;

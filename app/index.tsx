@@ -247,6 +247,7 @@ export default function App() {
           mass: 0.8,
         });
   }, [selected, navWidth, calm]);
+  const pendingCapture=(state.captures||[]).filter(item=>item.status&&!item.dismissed).at(-1);
   const need = state.tasks.filter((t) => t.status === "need").length;
   useEffect(() => {
     const sub = BackHandler.addEventListener("hardwareBackPress", () => {
@@ -348,7 +349,7 @@ export default function App() {
             alignItems: "flex-start",
           }}
         >
-          <View style={{ width: 42 }} />
+          {pendingCapture?<Pressable accessibilityRole="button" accessibilityLabel={pendingCapture.status==='ready'?'Review brain dump plan':'Open brain dump progress'} onPress={()=>setBrain(true)} style={{width:42,height:42,borderRadius:21,backgroundColor:c.tile,alignItems:'center',justifyContent:'center'}}>{['queued','planning','transcribing'].includes(pendingCapture.status||'')?<ActivityIndicator size="small" color={c.ink}/>:<Icon name="tasks" size={22} color={c.ink}/>}<View style={{position:'absolute',right:0,top:0,width:8,height:8,borderRadius:4,backgroundColor:pendingCapture.status==='ready'?c.ok:c.acc}}/></Pressable>:<View style={{width:42}}/>}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Customizing"

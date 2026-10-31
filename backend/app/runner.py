@@ -68,16 +68,20 @@ class Runner:
 
     async def decompose(self, text, settings):
         output = await self.ask(text, settings, purpose='braindump')
-        clean = re.sub(r'^```(?:json)?\s*|\s*```$', '', output.strip())
-        items = json.loads(clean)
-        if not isinstance(items, list) or len(items) > 12:
-            raise ValueError('The agent returned an invalid task list.')
-        result=[]
-        for item in items:
-            if not isinstance(item, dict) or not isinstance(item.get('title'), str) or not item['title'].strip():
-                raise ValueError('A task title is missing. Try again.')
-            channel = str(item.get('channel', 'inbox')).strip().lstrip('#')
-            if not re.fullmatch(r'[\w-]{1,64}', channel):
-                channel='inbox'
-            result.append(dict(id=uid(),title=item['title'].strip()[:160],sub=str(item.get('sub',''))[:300],channel=channel,kind=item.get('kind') if item.get('kind') in ('task','idea','note') else 'task'))
-        return result
+        return parse_drafts(output)
+
+
+def parse_drafts(output):
+    clean = re.sub(r'^```(?:json)?\s*|\s*```$', '', output.strip())
+    items = json.loads(clean)
+    if not isinstance(items, list) or len(items) > 12:
+        raise ValueError('The agent returned an invalid task list.')
+    result=[]
+    for item in items:
+        if not isinstance(item, dict) or not isinstance(item.get('title'), str) or not item['title'].strip():
+            raise ValueError('A task title is missing. Try again.')
+        channel = str(item.get('channel', 'inbox')).strip().lstrip('#')
+        if not re.fullmatch(r'[\w-]{1,64}', channel):
+            channel='inbox'
+        result.append(dict(id=uid(),title=item['title'].strip()[:160],sub=str(item.get('sub',''))[:300],channel=channel,kind=item.get('kind') if item.get('kind') in ('task','idea','note') else 'task'))
+    return result

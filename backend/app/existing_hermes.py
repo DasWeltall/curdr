@@ -60,7 +60,8 @@ class ExistingHermes:
         from .founder import instructions
         system = instructions(settings)+'\n'+language+' Never invent results. Existing Hermes server permissions and approval rules apply.\n'
         system += 'User name: '+(settings.get('name') or 'not provided')+'\n'+workspace+'\n'
-        system += 'Brain dump review: preserve obligations, identify ideas requiring validation, deduplicate and prioritize against the founder goal. Return ONLY a JSON array (no prose and no curdr block; the app renders these drafts as a plan), with at most 12 reviewed items with title, sub (why/next step), channel (without #), and kind (task, idea, or note). Recommend only a few immediate actions; do not treat every idea as a commitment.' if purpose=='braindump' else 'Channel setup: return only the requested JSON proposal or one question as JSON. Do not emit a curdr visualization or take external actions.' if purpose=='channel' else VISUAL
+        if purpose=='chat' and channel!='main':system+='This is a specialist channel. Follow its saved role and preferences; do not turn specialist requests into startup coaching. Inspect provided images and files, use available browser tools for current pages, and distinguish verified facts from guesses.\n'
+        system += 'Brain dump review: plan and research only. Do not start tasks, send messages, buy, delete, or change external state; the user reviews and starts selected tasks in curdr. Preserve obligations, identify ideas requiring validation, deduplicate and prioritize against the founder goal. Return ONLY a JSON array (no prose and no curdr block; the app renders these drafts as a plan), with at most 12 reviewed items with title, sub (why/next step), channel (without #), and kind (task, idea, or note). Recommend only a few immediate actions; do not treat every idea as a commitment.' if purpose=='braindump' else 'Channel setup: return only the requested JSON proposal or one question as JSON. Do not emit a curdr visualization or take external actions.' if purpose=='channel' else VISUAL
         if on_event is not None:
             return await self.stream_run(text,system,settings,history,channel,on_event,session_id)
         messages = [{'role':'system','content':system}, *(history or []), {'role':'user','content':text}]
@@ -113,7 +114,9 @@ class ExistingHermes:
     async def stream_run(self,text,system,settings,history,channel,on_event,session_id):
         if not self.capabilities.get('features',{}).get('run_submission'):
             return await self.stream_compat(text,system,settings,history,channel,on_event)
-        body={'input':text,'instructions':system}
+        # /v1/runs accepts a string or an array of messages, not loose content parts.
+        run_input=[{'role':'user','content':text}] if isinstance(text,list) else text
+        body={'input':run_input,'instructions':system}
         if history:body['conversation_history']=history
         if session_id:body['session_id']=session_id
         if settings.get('hermesModel') and settings.get('hermesProvider'):

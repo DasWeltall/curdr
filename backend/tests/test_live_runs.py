@@ -144,7 +144,9 @@ def test_live_image_and_binary_upload_reach_existing_hermes(tmp_path,monkeypatch
         submitted=[]
         async def handle(request):
             if request.method=='POST':
-                submitted.append(json.loads(request.content));return httpx.Response(202,json={'run_id':'vision1'})
+                body=json.loads(request.content);raw=body['input'];user=raw[-1].get('content','') if isinstance(raw,list) else raw
+                if not user:return httpx.Response(400,json={'error':{'message':'No user message found in input','type':'invalid_request_error'}})
+                submitted.append(body);return httpx.Response(202,json={'run_id':'vision1'})
             if request.url.path.endswith('/events'):return httpx.Response(200,stream=SSE([{'event':'run.completed','run_id':'vision1','output':'Received actual attachments'}]))
             return httpx.Response(200,json={'status':'completed','output':'Received actual attachments'})
         adapter=ExistingHermes('http://hermes:8642',key='private',transport=httpx.MockTransport(handle));adapter.capabilities={'features':{'run_submission':True}}
@@ -158,7 +160,8 @@ def test_live_image_and_binary_upload_reach_existing_hermes(tmp_path,monkeypatch
             assert Path(binary['hostPath']).is_relative_to(tmp_path/'workspace'/'uploads')
             result=await client.post('/message',json={'text':'Look at these','attachments':[image['id'],binary['id']]})
             assert result.status_code==200,result.text
-            content=submitted[0]['input']
+            assert submitted[0]['input'][0]['role']=='user'
+            content=submitted[0]['input'][0]['content']
             assert content[1]['type']=='image_url' and content[1]['image_url']['url'].startswith('data:image/png;base64,')
             assert binary['hostPath'] in content[0]['text']
         app.state.db.conn.close()

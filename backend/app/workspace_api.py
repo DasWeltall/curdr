@@ -83,7 +83,9 @@ def register(app,db,runtime,runner,auth,queue):
     async def park(id:str):
         row=db.conn.execute('SELECT data FROM drafts WHERE id=?',(id,)).fetchone()
         if not row:raise HTTPException(404,'Capture item not found.')
-        value=json.loads(row[0]);item={**value,'id':id,'parkedAt':now()};db.put('parked_ideas',id,item);return item
+        value=json.loads(row[0]);item={**value,'id':id,'parkedAt':now()};db.put('parked_ideas',id,item)
+        app.state.planner.saved(value.get('captureId'),id)
+        return item
 
     @app.get('/captures/parked',dependencies=[Depends(auth)])
     async def parked():return db.all('parked_ideas')

@@ -89,3 +89,11 @@ Existing Hermes permissions, approvals, spending limits and tools apply. curdr r
 Use an explicit shared workspace for files/screenshots. The default is `<data>/workspace`; `configure --workspace /absolute/path` changes it. Hermes and curdr must see the same path (including container mounts). Files up to 10 MiB in supported formats are indexed; hidden files and symlinks are skipped. Files are not a live desktop video stream. Images are forwarded as real image content; other uploads are accessible to Hermes file tools through the shared path. Model/tool support still determines whether the content can be processed.
 
 For upgrades and a copyable instruction for your agent, read [release 0.8](RELEASE-0.8.md).
+
+## Files, specialist channels and browser views
+
+Use a `--workspace` directory that the existing Hermes tools can actually read. curdr keeps the original uploaded bytes there and passes the file path to Hermes. Images also use native vision message parts. PDF/DOCX files require Hermes' document or terminal tools; availability and approval rules still come from your Hermes installation. A gateway on a different filesystem cannot make a local path readable to Hermes automatically.
+
+Each channel has its own conversation and editable standing context. For a food assistant, open its Context tab, use the food/menu role, and add your own preferences, requirements and budget. Menu photos and links go in that channel. Main chat can coordinate its work with a channel mention.
+
+Browser activity shows real tool steps and available captured pages. Configure the actual local Hermes profile with `--hermes-home` to allow browser-cache previews, or have Hermes save captures in `WORKSPACE/browser/CHANNEL`. The browser tool must actually provide screenshots. Missing captures are shown as action progress rather than an invented browser view.
